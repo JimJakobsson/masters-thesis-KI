@@ -12,6 +12,8 @@ class Evaluator:
         self.results = {}
 
     def evaluate_model(self, grid_search, X_test, y_test):
+        from sklearn.metrics import accuracy_score, classification_report
+
         best_model = grid_search.best_estimator_
         y_pred = best_model.predict(X_test)
         
@@ -27,6 +29,9 @@ class Evaluator:
         print(self.results['classification_report'])
 
     def plot_feature_importance(self, X, best_model):
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
         if hasattr(best_model.named_steps['classifier'], 'feature_importances_'):
             feature_importance = best_model.named_steps['classifier'].feature_importances_
             feature_names = best_model.named_steps['preprocessor'].get_feature_names_out()
@@ -44,6 +49,9 @@ class Evaluator:
             print("Feature importance plot is not available for this model type.")
 
     def plot_learning_curve(self, best_model, X, y):
+        from sklearn.model_selection import learning_curve
+        import matplotlib.pyplot as plt
+
         train_sizes, train_scores, test_scores = learning_curve(
             best_model, X, y, cv=5, n_jobs=-1, 
             train_sizes=np.linspace(0.1, 1.0, 10), scoring='accuracy'

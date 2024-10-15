@@ -2,10 +2,11 @@
 import pandas as pd
 from datetime import datetime
 from sqlalchemy import create_engine
-start = datetime.now()
 
-class ServerConnectionIPT1:
-    def read_IPT1_Table():
+from Thesis import DatabaseReader
+
+class ServerConnectionIPT1(DatabaseReader):
+    def read_table():
         params = {
             'Trusted_Connection': 'Yes',
             'Driver': '{ODBC Driver 17 for SQL Server}',
