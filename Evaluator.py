@@ -1,8 +1,8 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.base import accuracy_score
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report
+# from sklearn.metrics import classification_report
 import seaborn as sns
 from sklearn.model_selection import learning_curve
 
@@ -12,7 +12,7 @@ class Evaluator:
         self.results = {}
 
     def evaluate_model(self, grid_search, X_test, y_test):
-        from sklearn.metrics import accuracy_score, classification_report
+        
 
         best_model = grid_search.best_estimator_
         y_pred = best_model.predict(X_test)

@@ -3,9 +3,10 @@ import pandas as pd
 from datetime import datetime
 from sqlalchemy import create_engine
 
-from Thesis import DatabaseReader
+from DatabaseReader import DatabaseReader
 
 class ServerConnectionIPT1(DatabaseReader):
+    @staticmethod
     def read_table():
         params = {
             'Trusted_Connection': 'Yes',

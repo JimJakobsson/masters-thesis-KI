@@ -1,4 +1,4 @@
-from Thesis import DatabaseReader, Evaluator, PreProcessing, ServerConnectionIPT1
+import DatabaseReader, Evaluator, PreProcessing, ServerConnectionIPT1
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -17,7 +17,7 @@ class MLExperiment:
         self.pipeline = None
 
     def load_and_preprocess_data(self):
-        combined_tables = self.server_connection.read_IPT1_Table()
+        combined_tables = self.server_connection.read_table()
         return self.preprocessor.set_labels(combined_tables) 
     
     def prepare_features_and_labels(data):
