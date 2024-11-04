@@ -1,3 +1,4 @@
+import shap
 import DatabaseReader, Evaluator, PreProcessing, ServerConnectionIPT1
 import pandas as pd
 import numpy as np
@@ -25,36 +26,28 @@ class MLExperiment:
         y = data['labels']
         return X, y
 
-    def create_pipeline(self, X):
-        preprocessing_pipeline = self.preprocessor.create_pipeline(X)
-        self.pipeline = Pipeline([
+    def create_pipeline(self):
+        preprocessing_pipeline = self.preprocessor.create_pipeline()
+        self.pipeline = Pipeline(steps=[
             ('preprocessor', preprocessing_pipeline),
             ('classifier', self.model)
         ])
 
-    def train_model(self, X, y):
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-        grid_search = GridSearchCV(estimator=self.pipeline, param_grid=self.param_grid, 
-                                cv=3, n_jobs=-1, verbose=1, scoring='accuracy')
-        grid_search.fit(X_train, y_train)
-        
-        print("Best parameters found")
-        print(grid_search.best_params_)
+    def get_feature_names_after_preprocessing(self, model):
+        """Get feature names after preprocessing has been applied"""
+        feature_names = []
+        processor = model.named_steps['preprocessor']
 
-        print("Best score found")
-        print(grid_search.best_score_)
-        
-        return grid_search, X_test, y_test
-      
-
-    def get_numeric_feature_names(self, X):
-        return X.select_dtypes(include=[np.number]).columns.tolist()
-
-    def get_categorical_feature_names(self, X, preprocessor):
-        categorical_features = self.preprocessor.detect_categorical_features(X)
-        onehot_encoder = preprocessor.named_transformers_['cat'].named_steps['onehot']
-        return onehot_encoder.get_feature_names_out(categorical_features).tolist()
+        for name, _, columns in processor.transformers_:
+            if name == 'num':
+                feature_names.extend(columns)
+            elif name == 'cat':
+                encoder = processor.named_transformers_['cat'].named_steps['onehot']
+                cat_features = encoder.get_feature_names_out(columns)
+                feature_names.extend(cat_features)
+            else:
+                raise ValueError(f'Invalid transformer name: {name}')
+        return feature_names      
 
     def run(self):
         #Load the data from the server
@@ -63,7 +56,14 @@ class MLExperiment:
         #Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
         X, y = self.preprocessor.delete_null_features(X, y)
-       
+
+        self.preprocessor.set_categorical_features(X)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, 
+                                                            test_size=0.2, 
+                                                            random_state=42)
+        
+
         #info about x and y before preprocessing
         print("Number of features:", X.shape[1])
         print("Number of samples:", X.shape[0])
@@ -71,42 +71,67 @@ class MLExperiment:
 
         print("Number of samples:", X.shape[0])
         #Create pipeline to preprocess data
-        self.create_pipeline(X)
+        self.create_pipeline()
+
+        grid_search = GridSearchCV(estimator=self.pipeline, param_grid=self.param_grid, 
+                                cv=3, n_jobs=-1, verbose=1, scoring='accuracy')
         
-        #Use the pipeline to preprocess data
-        self.pipeline.fit(X, y)
+        #Fit the grid search
+        grid_search.fit(X_train, y_train)
 
-        #info about x and y after preprocessing
-        print("Number of features after preprocessing:", X.shape[1])
-        print("Number of samples after preprocessing:", X.shape[0])
-        print("y shape:", y.shape)
+        best_model = grid_search.best_estimator_
+        print("Best parameters found")
+        print(grid_search.best_params_)
 
-        print("Number of samples after preprocessing:", X.shape[0]) 
-        #Train the model
-        print("Training the model")
-        grid_search, X_test, y_test = self.train_model(X, y)
+        print("Best score found")
+        print(grid_search.best_score_)
 
-        #Evaluate the model
-        print("Evaluating the model")
-        self.evaluator.evaluate_model(grid_search, X_test, y_test)
+        y_pred = best_model.predict(X_test)
+        print("Test accuracy")
+        print(np.mean(y_pred == y_test))
 
-        # Evaluate the model using SHAP values
-        print("Evaluating the model using SHAP values")
+        X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
 
-        pipeline = grid_search.best_estimator_ 
-        self.evaluator.basic_shap_tree_evaluator(X_test, y_test, pipeline)
+        #Create explainer
+        explainer = shap.TreeExplainer(best_model.named_steps['classifier'])
 
-
-        # Plot feature importance
-        # self.evaluator.plot_feature_importance(
-        #     X,
-        #     grid_search.best_estimator_,
-        #     feature_names=X.columns
-        # )
+        #Calculate SHAP values
+        shap_values = explainer.shap_values(X_test_transformed)
+        print(f"SHAP values shape: {np.shape(shap_values)}")
         
-        # # Plot learning curve
-        # self.evaluator.plot_learning_curve( 
-        #     grid_search.best_estimator_,
-        #     X,
-        #     y
-        # )
+        
+        #Get feature names after preprocessing
+        feature_names = self.get_feature_names_after_preprocessing(best_model)
+
+        import matplotlib.pyplot as plt
+
+        # Create SHAP summary plot
+        # shap.summary_plot(shap_values, X_test_transformed, feature_names=feature_names)
+
+        # Save the plot as a PDF
+        # plt.savefig('shap_summary_plot.pdf')
+
+        #Feature importance based on SHAP values
+        # For binary classification, we'll take the mean absolute SHAP value across both classes
+        mean_shap_values = np.abs(shap_values).mean(axis=2)  # Average across classes
+        mean_importance = mean_shap_values.mean(axis=0)  # Average across samples
+
+        feature_importance = pd.DataFrame({
+            'feature': feature_names,
+            'importance': mean_importance
+        })
+
+        #Sort the features by importance. Include only the top 20 features
+        feature_importance = feature_importance.sort_values(by='importance', ascending=False)
+        feature_importance = feature_importance.head(20)
+        
+        # feature_importance.to_csv('feature_importance.csv', index=False)
+        # print("Feature importance saved to feature_importance.csv")
+        print("Feature importance:")
+        print(feature_importance)
+
+
+        
+        
+
+       

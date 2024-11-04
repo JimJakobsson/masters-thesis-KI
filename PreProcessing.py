@@ -20,7 +20,8 @@ class PreProcessing:
         return self._threshold
     
     def set_labels(self, combined_tables) -> None:
-        
+        #Copy to avoid modifying the original data
+        combined_tables = combined_tables.copy()
         #remove row with null death_yrmon
         combined_tables = combined_tables.dropna(subset=['death_yrmon'])
 
@@ -28,10 +29,6 @@ class PreProcessing:
         combined_tables['death_yrmon'] = combined_tables['death_yrmon'].apply(
             lambda x: str(int(x)) if pd.notnull(x) else None
         )
-
-        # combined_tables['death_yrmon'] = combined_tables['death_yrmon'].apply(
-        #     lambda x: str(int(x)) if isinstance(x, float) else x
-        # )
 
         #Create labels with validation. Handles cases where death_yrmon is not in the expected format
         def create_label(x: str) -> Optional[str]:
@@ -43,13 +40,6 @@ class PreProcessing:
             except (ValueError, TypeError):
                 return None
         
-        # combined_tables['labels'] = combined_tables['death_yrmon'].apply(
-        #     lambda x: '1' if x and int(x[:4]) > self._threshold
-        #          else '0' if x and int(x[:4]) <= self._threshold
-        #          else None
-        # )
-
-        #Apply the create_label function to the death_yrmon column
         combined_tables['labels'] = combined_tables['death_yrmon'].apply(create_label)
 
         #Drop rows with null labels
@@ -139,7 +129,9 @@ class PreProcessing:
         if len(high_null_features) > 0:
             print(f"Removing {len(high_null_features)} features with >{threshold*100}% null values:")
             print(high_null_features.tolist())
-            
+        
+        X = X.copy()
+        y = y.copy()
         X = X.loc[:, null_ratios < threshold]
         y = y.loc[X.index]
         
@@ -167,13 +159,22 @@ class PreProcessing:
             print(f"Training data has {X_train.shape[1]} columns while test data has {X_test.shape[1]} columns")
         else:
             print("Number of columns in training and test data are the same")
+        
+    def set_categorical_features(self, X):
+        """
+        Set the categorical features based on the input data. Numerical features are
+        determined as the columns that are not categorical.
+        """
+        print("Setting categorical features")
+        self.categorical_features = self.detect_categorical_features(X)
+        print(f"Set {len(self.categorical_features)} categorical features")
 
-    def create_pipeline(self, X):
+    def create_pipeline(self):
         
         # categorical_features = self.detect_categorical_features(X)
         # numeric_features = X.columns.difference(categorical_features)
 
-        self.detect_categorical_features(X)
+        #self.detect_categorical_features(X)
 
         numeric_transformer = Pipeline(steps=[
             #skip imputataion for now
@@ -192,7 +193,8 @@ class PreProcessing:
                 ('num', numeric_transformer, self.numeric_features),
                 ('cat', categorical_transformer, self.categorical_features)
             ],
-            remainder = 'drop' #Handle any columns that are not specified. Passthorugh means they are not transformed
+            remainder = 'drop', #Handle any columns that are not specified. Passthorugh means they are not transformed
+            n_jobs=None #Use all available cores
         )
         
         return preprocessor

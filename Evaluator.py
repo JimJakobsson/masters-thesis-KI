@@ -18,6 +18,7 @@ class Evaluator:
     def __init__(self):
         self.results = {}
         self.output_dir = os.path.dirname(os.path.abspath(__file__))
+        self.shap_values = None
 
     def evaluate_model(self, grid_search, X_test, y_test):
         # print("\n Debug information vefore prediction:")
@@ -61,83 +62,8 @@ class Evaluator:
     #     #save the plot as pdf
     #     plt.savefig(os.path.join(self.output_dir, 'shap_plot.pdf'), format='pdf', bbox_inches='tight')
     
-    def basic_shap_tree_evaluator(self, X_test, y_test, pipeline, sample_index=0, top_n=10):
-        model = pipeline.named_steps['classifier']
-        explainer = shap.TreeExplainer(model)
-        
-        # Transform the data using the preprocessor first
-        X_transformed = pipeline.named_steps['preprocessor'].transform(X_test)
-        
-        # Calculate SHAP values for both classes
-        shap_values = explainer.shap_values(X_transformed)
-        
-        # Get original feature names and values
-        feature_names = X_test.columns.tolist()
-        original_values = X_test.iloc[sample_index]
-        
-        # Calculate net SHAP values (difference between classes)
-        net_shap = shap_values[1][sample_index] - shap_values[0][sample_index]
-        
-        # Get absolute net SHAP values for feature importance ranking
-        abs_shap = np.abs(net_shap)
-        
-        # Get indices of top N most important features
-        top_feature_idx = np.argsort(abs_shap)[-top_n:][::-1]
-        
-        # Filter out features with zero contribution
-        significant_idx = [idx for idx in top_feature_idx if abs_shap[idx] > 0]
-        
-        if len(significant_idx) == 0:
-            print("No significant feature contributions found!")
-            return
-            
-        plt.figure(figsize=(12, max(8, len(significant_idx) * 0.5)))
-        
-        # Get prediction details
-        actual_class = y_test.iloc[sample_index]
-        pred_proba = pipeline.predict_proba(X_test.iloc[[sample_index]])[0]
-        pred_class = pipeline.predict(X_test.iloc[[sample_index]])[0]
-        
-        # Create explanation with significant features only
-        explanation = shap.Explanation(
-            values=net_shap[significant_idx],
-            base_values=0.5,  # Start from 0.5 for binary classification
-            data=original_values[significant_idx],
-            feature_names=[f"{feature_names[i]} ({original_values[feature_names[i]]:.1f})" 
-                        for i in significant_idx]
-        )
-        
-        shap.waterfall_plot(explanation, show=False)
-        
-        # Add informative title
-        plt.title(f'Most Influential Features for Sample {sample_index}\n'
-                f'Actual Class: {actual_class}, Predicted Class: {pred_class}\n'
-                f'Base Probability: 0.500 → Final Probability: {pred_proba[1]:.3f}')
-        
-        # Adjust y-axis to show full probability range
-        plt.ylim(min(0.2, pred_proba[1] - 0.05), 0.55)
-        
-        # Save the plot
-        plt.savefig(os.path.join(self.output_dir, f'shap_waterfall_plot_sample_{sample_index}.pdf'), 
-                    format='pdf', 
-                    bbox_inches='tight',
-                    dpi=300)
-        plt.close()
-
-        # Print detailed information
-        print(f"\nSample {sample_index} details:")
-        print(f"Actual class: {actual_class}")
-        print(f"Predicted class: {pred_class}")
-        print(f"Base probability: 0.500")
-        print(f"Final probability: {pred_proba[1]:.3f}")
-        print("\nTop feature contributions:")
-        for idx in significant_idx:
-            name = feature_names[idx]
-            value = original_values[name]
-            net_contribution = net_shap[idx]
-            print(f"{name}: {value:.1f} (net contribution: {net_contribution:.4f})")
-            print(f"  Class 0 contribution: {shap_values[0][sample_index][idx]:.4f}")
-            print(f"  Class 1 contribution: {shap_values[1][sample_index][idx]:.4f}")
+    
+    
 
     def plot_feature_importance(self, X, pipeline, feature_names=None):
         """
