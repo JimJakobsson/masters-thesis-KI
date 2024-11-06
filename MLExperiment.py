@@ -145,7 +145,11 @@ class MLExperiment:
         
         # Create waterfall plot
         X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
-        self.evaluator.plot_waterfall(X_test_transformed, feature_names)
+        # Explain a strong class 1 prediction
+        self.evaluator.plot_waterfall(best_model, X_test, 1, 20)
+        # self.evaluator.plot_waterfall(X_test_transformed, feature_names, X_test)
+
+
         #Old and working code below
         ############################################################
         # y_pred = best_model.predict(X_test)

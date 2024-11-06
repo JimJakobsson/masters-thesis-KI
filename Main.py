@@ -33,17 +33,28 @@ class Main:
 
         This function does not return any value.
         """
-        #  rf_params = {
+        # rf_params = {
         #     'classifier__n_estimators': [50, 100, 200],
         #     'classifier__max_depth': [10, 20, None],
         #     'classifier__min_samples_split': [2, 5, 10],
         #     'classifier__min_samples_leaf': [1, 2, 4],
         #     'classifier__max_features': ['sqrt', 'log2'],
         #     'classifier__bootstrap': [True, False],
-        #     'classifier__criterion': ['gini', 'entropy'],
+        #     'classifier__criterion': ['entropy'],
         #     'classifier__class_weight': [None, 'balanced'],
         #     'classifier__ccp_alpha': [0.0, 0.1]
         # }
+        rf_params = {
+            {'classifier__bootstrap': False, 
+             'classifier__ccp_alpha': 0.0, 
+             'classifier__class_weight': 'balanced', 
+             'classifier__criterion': 'entropy', 
+             'classifier__max_depth': 20, 
+             'classifier__max_features': 'sqrt', 
+             'classifier__min_samples_leaf': 2, 
+             'classifier__min_samples_split': 5, 
+             'classifier__n_estimators': 200}
+        }
 
         rf_model = RandomForestClassifier(random_state=42)
         # rf_params = {
@@ -55,15 +66,15 @@ class Main:
         #     'classifier__bootstrap': [True, False],
         #     'classifier__criterion': ['gini', 'entropy']
         # }
-        rf_params = {
-            'classifier__n_estimators': [50],
-            'classifier__max_depth': [None],
-            'classifier__min_samples_split': [10],
-            'classifier__min_samples_leaf': [4],
-            'classifier__max_features': ['sqrt'],
-            'classifier__bootstrap': [False],
-            'classifier__criterion': ['entropy']
-        }
+        # rf_params = {
+        #     'classifier__n_estimators': [50],
+        #     'classifier__max_depth': [None],
+        #     'classifier__min_samples_split': [10],
+        #     'classifier__min_samples_leaf': [4],
+        #     'classifier__max_features': ['sqrt'],
+        #     'classifier__bootstrap': [False],
+        #     'classifier__criterion': ['entropy']
+        # }
         preprocessor = PreProcessing()
         evaluator = Evaluator()
         connection = ServerConnectionIPT1()

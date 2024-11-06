@@ -21,6 +21,7 @@ class Evaluator:
         self.shap_values = None
         self.feature_importance = None
         self.explainer = None
+        self.aggregated_shap = None
 
     def evaluate_model(self, grid_search, X_test, y_test):
         # print("\n Debug information vefore prediction:")
@@ -77,9 +78,11 @@ class Evaluator:
         aggregated_shap = {}
         processed_features = []
 
-        # For binary classification, take absolute values and average across classes
+        #For binary classification, take absolute values and average across classes
         if len(shap_values.shape) == 3:  # Shape: (n_samples, n_features, n_classes)
-            shap_values = np.abs(shap_values).mean(axis=2)
+            #Use .mean or .sum?
+            # shap_values = np.abs(shap_values).mean(axis=2)
+            shap_values = np.abs(shap_values).sum(axis=2)
 
         #Iterate throguh each feature
         current_idx = 0
@@ -104,6 +107,7 @@ class Evaluator:
         })
         print(f"\nProcessed {len(processed_features)} categorical features out of {len(original_feature_names)} original features")
         print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
+
         return aggregated_shap, feature_importance
     
     def calculate_feature_importance(self, best_model, X_test, preprocessor):
@@ -128,10 +132,10 @@ class Evaluator:
 
         # Aggregate SHAP values for one-hot encoded features.
         # Return feature importance and processed feature names
-        aggregated_shap, self.feature_importance = self.aggregate_shap_values(
+        self.aggregated_shap, self.feature_importance = self.aggregate_shap_values(
             self.shap_values, feature_names, preprocessor)
 
-        return aggregated_shap, feature_names
+        return self.aggregated_shap, feature_names
 
     def plot_feature_importance(self, feature_importance=None, num_features=20):
         """Plot featrue importance"""
@@ -183,7 +187,7 @@ class Evaluator:
 
         #Summary plot
         plt.figure(figsize=(10, 12))
-        shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=True)
+        shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=False)
         plt.tight_layout()
         plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
         plt.close()
@@ -195,35 +199,73 @@ class Evaluator:
         plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
         plt.close()
     
-    def plot_waterfall(self, X_test_transformed, feature_names, observation_idx = 0, class_idx =1, top_n=20):
-        """Create SHAP waterfall plot for a single observation"""
-        # Create SHAP values for the observation
-        values = self.shap_values[observation_idx, :, class_idx]
+    def plot_waterfall(self, best_model, X_test, class_to_explain, top_n):
+        """
+        Create SHAP waterfall plot for an observation that strongly predicts the class of interest
         
-        # Get absolute values and sort by importance
-        feature_importance = np.abs(values)
-        top_indices = np.argsort(-feature_importance)
-
+        Args:
+            X_test_transformed: Transformed test data
+            feature_names: Names of features after preprocessing
+            X_test: Original test data
+            class_to_explain: Which class prediction to explain (0 or 1)
+            top_n: Number of top features to show
+        """
+        # Get model predictions
+        probas = best_model.predict_proba(X_test)
+        
+        # Find an observation that strongly predicts the class we want to explain
+        if class_to_explain == 1:
+            # Find observation with highest probability of class 1
+            observation_idx = np.argmax(probas[:, 1])
+        else:
+            # Find observation with highest probability of class 0
+            observation_idx = np.argmax(probas[:, 0])
+        
+        pred_prob = probas[observation_idx, class_to_explain]
+        
+        print(f"\nAnalyzing observation {observation_idx}")
+        print(f"Prediction probabilities: Class 0: {probas[observation_idx, 0]:.3f}, Class 1: {probas[observation_idx, 1]:.3f}")
+        print(f"Model predicts class {class_to_explain} with {pred_prob:.3f} probability")
+        
+        # Rest of your waterfall plot code...
+        # Get all features and their SHAP values for this observation
+        all_features = self.feature_importance['feature'].tolist()
+        all_values = np.array([self.aggregated_shap[feature][observation_idx] 
+                            for feature in all_features])
+        
+        # Sort features by absolute SHAP value for this specific observation
+        abs_values = np.abs(all_values)
+        top_indices = np.argsort(-abs_values)[:top_n]
+        
+        top_features = [all_features[i] for i in top_indices]
+        top_values = all_values[top_indices]
+        top_data = X_test.iloc[observation_idx][top_features].values
+        
         explanation = shap.Explanation(
-            values=values[top_indices],
-            base_values=float(self.explainer.expected_value[class_idx]),
-            data=X_test_transformed[observation_idx][top_indices],
-            feature_names=[feature_names[i] for i in top_indices]
+            values=top_values,
+            base_values=float(self.explainer.expected_value[class_to_explain]),
+            data=top_data,
+            feature_names=top_features
         )
 
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(20,15))
         shap.waterfall_plot(explanation, show=False)
-
+        
+        # Customize plot
         ax = plt.gca()
         plt.rcParams.update({'font.size': 12})
         ax.set_xlabel('SHAP value', fontsize=14)
-        ax.set_title('Feature Contributions to Prediction', fontsize=16, pad=20)
+        ax.set_title(f'Why model predicts Class {class_to_explain}? (probability={pred_prob:.3f})', 
+                    fontsize=16, pad=20)
         ax.tick_params(axis='y', labelsize=12)
         plt.gcf().set_tight_layout(True)
         plt.subplots_adjust(left=0.3)
         plt.margins(y=0.1)
-        plt.savefig(f'{self.output_dir}/shap_waterfall_plot.pdf', bbox_inches='tight', dpi=300)
+        
+        plt.savefig(f'{self.output_dir}/shap_waterfall_plot_class_{class_to_explain}.pdf', 
+                    bbox_inches='tight', dpi=300)
         plt.close()
+
 
     def plot_learning_curve(self, model, X, y):
         """
