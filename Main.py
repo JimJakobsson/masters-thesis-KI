@@ -46,14 +46,23 @@ class Main:
         # }
 
         rf_model = RandomForestClassifier(random_state=42)
+        # rf_params = {
+        #     'classifier__n_estimators': [50, 100],
+        #     'classifier__max_depth': [10, None],
+        #     'classifier__min_samples_split': [2, 10],
+        #     'classifier__min_samples_leaf': [1, 4],
+        #     'classifier__max_features': ['sqrt', 'log2'],
+        #     'classifier__bootstrap': [True, False],
+        #     'classifier__criterion': ['gini', 'entropy']
+        # }
         rf_params = {
-            'classifier__n_estimators': [50, 100],
-            'classifier__max_depth': [10, None],
-            'classifier__min_samples_split': [2, 10],
-            'classifier__min_samples_leaf': [1, 4],
-            'classifier__max_features': ['sqrt', 'log2'],
-            'classifier__bootstrap': [True, False],
-            'classifier__criterion': ['gini', 'entropy']
+            'classifier__n_estimators': [50],
+            'classifier__max_depth': [None],
+            'classifier__min_samples_split': [10],
+            'classifier__min_samples_leaf': [4],
+            'classifier__max_features': ['sqrt'],
+            'classifier__bootstrap': [False],
+            'classifier__criterion': ['entropy']
         }
         preprocessor = PreProcessing()
         evaluator = Evaluator()
