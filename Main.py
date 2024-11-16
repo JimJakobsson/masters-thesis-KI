@@ -45,18 +45,20 @@ class Main:
         #     'classifier__ccp_alpha': [0.0, 0.1]
         # }
         rf_params = {
-            {'classifier__bootstrap': False, 
-             'classifier__ccp_alpha': 0.0, 
-             'classifier__class_weight': 'balanced', 
-             'classifier__criterion': 'entropy', 
-             'classifier__max_depth': 20, 
-             'classifier__max_features': 'sqrt', 
-             'classifier__min_samples_leaf': 2, 
-             'classifier__min_samples_split': 5, 
-             'classifier__n_estimators': 200}
+             'classifier__bootstrap': [False], 
+             'classifier__ccp_alpha': [0.0], 
+            #  'classifier__class_weight': [0: 1, 1:], 
+             'classifier__criterion': ['entropy'], 
+             'classifier__max_depth': [20], 
+             'classifier__max_features': ['sqrt'], 
+             'classifier__min_samples_leaf': [2], 
+             'classifier__min_samples_split': [5], 
+             'classifier__n_estimators': [200]
         }
-
-        rf_model = RandomForestClassifier(random_state=42)
+        class_weight = {
+            'class_weight': {0: 1, 1: 4}
+        }
+        rf_model = RandomForestClassifier(class_weight, random_state=42)
         # rf_params = {
         #     'classifier__n_estimators': [50, 100],
         #     'classifier__max_depth': [10, None],

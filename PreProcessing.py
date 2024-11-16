@@ -5,6 +5,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.impute import  SimpleImputer
 from sklearn.pipeline import Pipeline
+# from imblearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 class PreProcessing:
@@ -35,7 +36,7 @@ class PreProcessing:
             try:
                 if x and len(x) >= 4:
                     year = int(x[:4])
-                    return '1' if year > self._threshold else '0'
+                    return '0' if year > self._threshold else '1'
                 return None
             except (ValueError, TypeError):
                 return None
@@ -44,6 +45,8 @@ class PreProcessing:
 
         #Drop rows with null labels
         combined_tables = combined_tables.dropna(subset=['labels'])
+
+        combined_tables['labels'] = combined_tables['labels'].astype(int)
         print(f"Labels created: {combined_tables['labels'].value_counts().to_dict()}")
         print("labels successfully set")
         #combined_tables = combined_tables.dropna(subset=['labels'])
@@ -80,7 +83,7 @@ class PreProcessing:
                 is_categorical = (
                     X[feature].dtype == 'object' or
                     X[feature].dtype == 'bool' or
-                    X[feature].nunique() <= 10 #or
+                    (X[feature].nunique() <= 10) and (X[feature].count() > 10)  #or
 
                     #check to see if the column contains string values
                     #come back to this later

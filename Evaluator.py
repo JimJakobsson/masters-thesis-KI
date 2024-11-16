@@ -9,6 +9,16 @@ from sklearn.metrics import accuracy_score, classification_report
 import seaborn as sns
 from sklearn.model_selection import learning_curve
 import os
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from xgboost import XGBClassifier, XGBRegressor
+# from lightgbm import LGBMClassifier, LGBMRegressor
+from catboost import CatBoostClassifier, CatBoostRegressor
+from sklearn.kernel_ridge import KernelRidge
+
 
 from sklearn.preprocessing import OrdinalEncoder
 from scipy.sparse import issparse
@@ -27,10 +37,11 @@ class Evaluator:
         # print("\n Debug information vefore prediction:")
         # print("X_test columns:", X_test.columns.tolist())
         # print("Expected features values:", best_model.best_estimator_.named_steps['preprocessor'].get_feature_names_out())
-        y_pred = grid_search.predict(X_test)
+        y_pred = (grid_search.predict_proba(X_test)[:,1] > 0.4).astype(int)
         # best_model = grid_search.best_estimator_
         # y_pred = best_model.predict(X_test)
-        
+        print(y_test)
+        y_test=y_test.astype(int)
         self.results['best_params'] = grid_search.best_params_
         self.results['best_cv_score'] = grid_search.best_score_
         self.results['test_accuracy'] = accuracy_score(y_test, y_pred)
@@ -109,7 +120,48 @@ class Evaluator:
         print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
 
         return aggregated_shap, feature_importance
+    def create_explainer(self,model, data=None):
+        classifier = model.named_steps['classifier']
+
+        #Tree based models
+         # Tree-based models
+        tree_based_models = (
+            RandomForestClassifier, GradientBoostingClassifier, 
+            DecisionTreeClassifier, XGBClassifier, XGBRegressor,
+            # LGBMClassifier, LGBMRegressor, 
+            CatBoostClassifier, CatBoostRegressor,
+            AdaBoostClassifier
+        )
+        
+        # Linear models
+        linear_models = (
+            LogisticRegression, LinearRegression
+        )
+        
+        # Deep learning models
+        deep_learning_models = (
+            MLPClassifier,
+        )
+
+        try:
+            if isinstance(classifier, tree_based_models):
+                return shap.TreeExplainer(classifier)
+            # Check for deep learning models
+            elif isinstance(model, deep_learning_models):
+                if data is None:
+                    raise ValueError("Background data is required for DeepExplainer")
+                return shap.DeepExplainer(model, data)
+            
+            # Check for linear models
+            elif isinstance(model, linear_models):
+                return shap.LinearExplainer(model, data)
+           
+            
+        except Exception as e:
+            raise Exception(f"Error creating SHAP explainer: {str(e)}")
+
     
+
     def calculate_feature_importance(self, best_model, X_test, preprocessor):
         """
         Calculate feature importance using SHAP values.
@@ -118,11 +170,20 @@ class Evaluator:
         X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
 
         # Create explainer
-        self.explainer = shap.TreeExplainer(best_model.named_steps['classifier'])
+        # Check what instance the best model is of and choose corresponding explainer
+        # Tree explainer for tree based models
+        # Neural explainer for ANN 
+        # background_data = X_test_transformed[:100] if len(X_test_transformed) > 100 else X_test_transformed
+        background_data = X_test_transformed
+        self.explainer = self.create_explainer(best_model, background_data)
+        print("Explainer created: ", self.explainer)
+        # self.explainer = shap.TreeExplainer(best_model.named_steps['classifier'])
 
-        # Calculate SHAP values
-        self.shap_values = self.explainer.shap_values(X_test_transformed)
-
+        # Calculate SHAP values on test data
+        # self.shap_values = self.
+        shap_values = self.explainer.shap_values(X_test_transformed)
+        # Only shap values for class 1
+        self.shap_values = shap_values
         # Get feature names after preprocessing
         feature_names = self.get_feature_names_after_preprocessing(best_model)
 
@@ -144,6 +205,10 @@ class Evaluator:
         
         # Sort features by importance. Get top 20 features
         feature_importance = feature_importance.sort_values('importance', ascending=False).head(num_features)
+
+        #get count of features with importance = 0	
+        zero_importance = feature_importance[feature_importance['importance'] == 0].shape[0]
+        print(f"\nNumber of features with importance = 0: {zero_importance}")
 
         # Print the feature importance
         print("\nFeature Importance:")
@@ -170,7 +235,7 @@ class Evaluator:
         plt.barh(feature_importance['feature'], feature_importance['importance'])
         plt.xlabel('Mean |SHAP value|')
         plt.ylabel('Feature')
-        plt.title('Feature Importance (Aggregated Categorical Features)')
+        plt.title('Feature Importance')
         plt.tight_layout()
         plt.savefig('feature_importance_aggregated.pdf')
         plt.close()
@@ -199,7 +264,7 @@ class Evaluator:
         plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
         plt.close()
     
-    def plot_waterfall(self, best_model, X_test, class_to_explain, top_n):
+    def plot_waterfall(self, best_model, X_test, class_to_explain, top_n=10):
         """
         Create SHAP waterfall plot for an observation that strongly predicts the class of interest
         
@@ -235,7 +300,8 @@ class Evaluator:
         
         # Sort features by absolute SHAP value for this specific observation
         abs_values = np.abs(all_values)
-        top_indices = np.argsort(-abs_values)[:top_n]
+        # top_indices = np.argsort(-abs_values)[:top_n]
+        top_indices = np.argsort(-abs_values)
         
         top_features = [all_features[i] for i in top_indices]
         top_values = all_values[top_indices]
@@ -255,7 +321,7 @@ class Evaluator:
         ax = plt.gca()
         plt.rcParams.update({'font.size': 12})
         ax.set_xlabel('SHAP value', fontsize=14)
-        ax.set_title(f'Why model predicts Class {class_to_explain}? (probability={pred_prob:.3f})', 
+        ax.set_title(f'How the model predicts Class {class_to_explain} (probability={pred_prob:.3f})', 
                     fontsize=16, pad=20)
         ax.tick_params(axis='y', labelsize=12)
         plt.gcf().set_tight_layout(True)

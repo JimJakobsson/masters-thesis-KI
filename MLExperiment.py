@@ -1,4 +1,5 @@
 import shap
+from sklearn.pipeline import FunctionTransformer
 import DatabaseReader, Evaluator, PreProcessing, ServerConnectionIPT1
 import pandas as pd
 import numpy as np
@@ -6,7 +7,10 @@ from datetime import datetime
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
+# from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
+from imblearn.over_sampling import SMOTE
+from collections import Counter
 
 class MLExperiment:
     def __init__(self, model: BaseEstimator, param_grid: dict, preprocessor: PreProcessing, evaluator: Evaluator, connection_class: DatabaseReader):
@@ -26,11 +30,19 @@ class MLExperiment:
         X = data.drop(['labels', 'twinnr', 'death_yrmon', 'birthdate1', 'age_death'], axis=1)
         y = data['labels']
         return X, y
-
+    def smote_transform(self, X, y=None):
+        if y is None:
+            raise ValueError("y cannot be None")
+        smote = SMOTE(random_state=42, sampling_strategy='minority')
+        X_resampled, y_resampled = smote.fit_resample(X, y)
+        print(f"Original class distribution: {Counter(y)}")
+        print(f"Resampled class distribution: {Counter(y_resampled)}")
+        return X_resampled, y_resampled
     def create_pipeline(self):
         preprocessing_pipeline = self.preprocessor.create_pipeline()
         self.pipeline = Pipeline(steps=[
             ('preprocessor', preprocessing_pipeline),
+            # ('smote', SMOTE(random_state=42, sampling_strategy='minority')),
             ('classifier', self.model)
         ])
 
@@ -109,11 +121,14 @@ class MLExperiment:
         self.preprocessor.set_categorical_features(X)
         
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
+        y_train = y_train.astype(int)
+        y_test = y_test.astype(int)
         # Info about X and y before preprocessing
         print("Number of features:", X.shape[1])
         print("Number of samples:", X.shape[0])
         print("y shape:", y.shape)
+        #print values in X_train that is string
+        print(X_train.select_dtypes(include=['object']).head())
 
         # Create pipeline to preprocess data
         self.create_pipeline()
