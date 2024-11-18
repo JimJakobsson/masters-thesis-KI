@@ -51,7 +51,7 @@ class PreProcessing:
         print("labels successfully set")
         #combined_tables = combined_tables.dropna(subset=['labels'])
         return combined_tables
-    
+    # def set_ages(self, combined_tables) -> None:
     def detect_categorical_features(self, X):
         """
         Detect categorical features in the dataset

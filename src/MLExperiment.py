@@ -27,7 +27,7 @@ class MLExperiment:
         return self.preprocessor.set_labels(combined_tables) 
     
     def prepare_features_and_labels(self, data):
-        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'birthdate1', 'age_death'], axis=1)
+        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death'], axis=1)
         y = data['labels']
         return X, y
     def smote_transform(self, X, y=None):
@@ -115,6 +115,7 @@ class MLExperiment:
         # Load the data from the server
         data = self.load_data()
 
+        # data = self.preprocessor.set_ages(data)
         # Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
         X, y = self.preprocessor.delete_null_features(X, y)
