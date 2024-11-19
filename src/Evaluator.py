@@ -217,11 +217,11 @@ class Evaluator:
 
         #Plot the feature importances
         plt.figure(figsize=(10, 8), dpi=300) # dpi=300 for high-quality plot
-        sns.barplot(x='importance_abs_mean', y='feature', data=feature_importance, palette='viridis')
+        sns.barplot(x='importance_abs_mean', y='feature', data=feature_importance, palette='rocket')
         plt.xlabel('Mean |SHAP Value|', fontsize=12)
         plt.ylabel('Feature', fontsize=12)
-        plt.title('Feature Importance, mean(abs)', fontsize=14, pad=20)
-        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.title('Feature Importance', fontsize=14, pad=20)
+        # plt.grid(True, linestyle='--', alpha=0.7)
         plt.tight_layout()
         
         # Save plot
@@ -233,6 +233,7 @@ class Evaluator:
 
         #Alternative plot
         plt.figure(figsize=(10, 8))
+        feature_importance = feature_importance.sort_values('importance_abs_mean', ascending=True)
         plt.barh(feature_importance['feature'], feature_importance['importance_abs_mean'], color='royalblue')
         plt.xlabel('Mean |SHAP value|')
         plt.ylabel('Feature')

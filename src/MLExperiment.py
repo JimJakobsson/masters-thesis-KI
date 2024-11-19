@@ -29,7 +29,7 @@ class MLExperiment:
         return self.preprocessor.set_labels(combined_tables) 
     
     def prepare_features_and_labels(self, data):
-        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death'], axis=1)
+        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death', 'birthdate1'], axis=1)
         y = data['labels']
         return X, y
     # def smote_transform(self, X, y=None):
@@ -117,15 +117,15 @@ class MLExperiment:
         # Load the data from the server
         data = self.load_data()
         ages = AgeExploration()
-        ages.box_plot_age_combined(data)
-        ages.age_distribution_histogram(data)
+        # ages.box_plot_age_combined(data)
+        # ages.age_distribution_histogram(data)
         # data = self.preprocessor.set_ages(data)
         # Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
         X, y = self.preprocessor.delete_null_features(X, y)
         
         #Boxplot of age distribution for the two classes
-        ages.box_plot_age_classes(X, y)
+        # ages.box_plot_age_classes(X, y)
         #Detects whether the features are categorical or numeric and sets them as attributes in the preprocessor
         self.preprocessor.set_categorical_features(X)
         
