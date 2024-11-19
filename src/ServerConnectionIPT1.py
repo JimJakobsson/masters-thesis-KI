@@ -20,27 +20,27 @@ class ServerConnectionIPT1(DatabaseReader):
 
         try:
             # Create a SQLAlchemy engine
-            # engine = create_engine(f"mssql+pyodbc:///?odbc_connect={conn_str}")
+            engine = create_engine(f"mssql+pyodbc:///?odbc_connect={conn_str}")
             
-            # print("Connection successful")
+            print("Connection successful")
             
-            # # Define table names
-            # ipt1_table = "archive.ipt1_20130909"
-            # mortality_table = "archive.resp_0121_mortality2022"
+            # Define table names
+            ipt1_table = "archive.ipt1_20130909"
+            mortality_table = "archive.resp_0121_mortality2022"
 
-            # # Query to join ipt1_table and mortality_table
-            # query = f"""
-            # SELECT i.*, m.birthdate1, m.death_yrmon, m.age_death
-            # FROM {ipt1_table} i
-            # JOIN {mortality_table} m
-            # ON i.TWINNR = m.TWINNR
-            # """
-            # print("Executing query...")
-            # combined_tables = pd.read_sql_query(query, engine)
+            # Query to join ipt1_table and mortality_table
+            query = f"""
+            SELECT i.*, m.birthdate1, m.death_yrmon, m.age_death
+            FROM {ipt1_table} i
+            JOIN {mortality_table} m
+            ON i.TWINNR = m.TWINNR
+            """
+            print("Executing query...")
+            combined_tables = pd.read_sql_query(query, engine)
             # combined_tables = 
             # #write to file
             # #combined_tables.to_csv('combined_tables.csv', index=False)
-            combined_tables = pd.read_csv('misc/combined_tables.csv')
+            # combined_tables = pd.read_csv('misc/combined_tables.csv')
             print(f"Query executed successfully. DataFrame shape: {combined_tables.shape}")
             return combined_tables
         

@@ -1,6 +1,8 @@
 import shap
 from sklearn.pipeline import FunctionTransformer
+
 import DatabaseReader, Evaluator, PreProcessing, ServerConnectionIPT1
+from AgeExploration import AgeExploration
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -9,7 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 # from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
-from imblearn.over_sampling import SMOTE
+# from imblearn.over_sampling import SMOTE
 from collections import Counter
 
 class MLExperiment:
@@ -30,14 +32,14 @@ class MLExperiment:
         X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death'], axis=1)
         y = data['labels']
         return X, y
-    def smote_transform(self, X, y=None):
-        if y is None:
-            raise ValueError("y cannot be None")
-        smote = SMOTE(random_state=42, sampling_strategy='minority')
-        X_resampled, y_resampled = smote.fit_resample(X, y)
-        print(f"Original class distribution: {Counter(y)}")
-        print(f"Resampled class distribution: {Counter(y_resampled)}")
-        return X_resampled, y_resampled
+    # def smote_transform(self, X, y=None):
+    #     if y is None:
+    #         raise ValueError("y cannot be None")
+    #     smote = SMOTE(random_state=42, sampling_strategy='minority')
+    #     X_resampled, y_resampled = smote.fit_resample(X, y)
+    #     print(f"Original class distribution: {Counter(y)}")
+    #     print(f"Resampled class distribution: {Counter(y_resampled)}")
+    #     return X_resampled, y_resampled
     def create_pipeline(self):
         preprocessing_pipeline = self.preprocessor.create_pipeline()
         self.pipeline = Pipeline(steps=[
@@ -114,13 +116,20 @@ class MLExperiment:
     def run(self):
         # Load the data from the server
         data = self.load_data()
-
+        ages = AgeExploration()
+        ages.box_plot_age_combined(data)
+        ages.age_distribution_histogram(data)
         # data = self.preprocessor.set_ages(data)
         # Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
         X, y = self.preprocessor.delete_null_features(X, y)
+        
+        #Boxplot of age distribution for the two classes
+        ages.box_plot_age_classes(X, y)
+        #Detects whether the features are categorical or numeric and sets them as attributes in the preprocessor
         self.preprocessor.set_categorical_features(X)
         
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         y_train = y_train.astype(int)
         y_test = y_test.astype(int)
@@ -155,7 +164,7 @@ class MLExperiment:
 
         # Get ordered features for SHAP plots
         ordered_features = self.evaluator.feature_importance.sort_values(
-            by='importance', ascending=False)['feature'].tolist()
+            by='importance_abs_mean', ascending=False)['feature'].tolist()
         
         self.evaluator.plot_shap_summary(aggregated_shap_values, X_test, ordered_features)
         

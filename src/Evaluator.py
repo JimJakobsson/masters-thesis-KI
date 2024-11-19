@@ -114,7 +114,8 @@ class Evaluator:
         # Calculate mean importance for each feature
         feature_importance = pd.DataFrame({
             'feature': list(aggregated_shap.keys()),
-            'importance': [np.mean(np.abs(values)) for values in aggregated_shap.values()]
+            'importance_abs_mean': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
+            'importance_mean': [np.mean(values) for values in aggregated_shap.values()]
         })
         print(f"\nProcessed {len(processed_features)} categorical features out of {len(original_feature_names)} original features")
         print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
@@ -204,10 +205,10 @@ class Evaluator:
             feature_importance = self.feature_importance
         
         # Sort features by importance. Get top 20 features
-        feature_importance = feature_importance.sort_values('importance', ascending=False).head(num_features)
+        feature_importance = feature_importance.sort_values('importance_abs_mean', ascending=False).head(num_features)
 
         #get count of features with importance = 0	
-        zero_importance = feature_importance[feature_importance['importance'] == 0].shape[0]
+        zero_importance = feature_importance[feature_importance['importance_abs_mean'] == 0].shape[0]
         print(f"\nNumber of features with importance = 0: {zero_importance}")
 
         # Print the feature importance
@@ -216,10 +217,10 @@ class Evaluator:
 
         #Plot the feature importances
         plt.figure(figsize=(10, 8), dpi=300) # dpi=300 for high-quality plot
-        sns.barplot(x='importance', y='feature', data=feature_importance, palette='viridis')
+        sns.barplot(x='importance_abs_mean', y='feature', data=feature_importance, palette='viridis')
         plt.xlabel('Mean |SHAP Value|', fontsize=12)
         plt.ylabel('Feature', fontsize=12)
-        plt.title('Feature Importance', fontsize=14, pad=20)
+        plt.title('Feature Importance, mean(abs)', fontsize=14, pad=20)
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.tight_layout()
         
@@ -232,7 +233,7 @@ class Evaluator:
 
         #Alternative plot
         plt.figure(figsize=(10, 8))
-        plt.barh(feature_importance['feature'], feature_importance['importance'])
+        plt.barh(feature_importance['feature'], feature_importance['importance_abs_mean'], color='royalblue')
         plt.xlabel('Mean |SHAP value|')
         plt.ylabel('Feature')
         plt.title('Feature Importance')
