@@ -40,7 +40,7 @@ class Evaluator:
         y_pred = (grid_search.predict_proba(X_test)[:,1] > 0.4).astype(int)
         # best_model = grid_search.best_estimator_
         # y_pred = best_model.predict(X_test)
-        print(y_test)
+        
         y_test=y_test.astype(int)
         self.results['best_params'] = grid_search.best_params_
         self.results['best_cv_score'] = grid_search.best_score_
@@ -217,7 +217,7 @@ class Evaluator:
 
         #Plot the feature importances
         plt.figure(figsize=(10, 8), dpi=300) # dpi=300 for high-quality plot
-        sns.barplot(x='importance_abs_mean', y='feature', data=feature_importance, palette='rocket')
+        sns.barplot(x='importance_abs_mean', y='feature', data=feature_importance, palette='rocket', hue = 'feature')
         plt.xlabel('Mean |SHAP Value|', fontsize=12)
         plt.ylabel('Feature', fontsize=12)
         plt.title('Feature Importance', fontsize=14, pad=20)

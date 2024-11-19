@@ -60,7 +60,7 @@ class AgeExploration:
         plt.xticks(bins)
         plt.title('Age distribution in IPT1', fontsize=16)
         plt.xlabel('Age', fontsize=14)
-        plt.ylabel('Frequency', fontsize=14)
+        plt.ylabel('Count', fontsize=14)
         plt.savefig('age_distribution_hist.pdf', format='pdf')
         plt.close()
         print("Age distribution histogram plot created successfully.")

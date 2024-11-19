@@ -197,7 +197,7 @@ class PreProcessing:
                 ('cat', categorical_transformer, self.categorical_features)
             ],
             remainder = 'drop', #Handle any columns that are not specified. Passthorugh means they are not transformed
-            n_jobs=None #Use all available cores
+            n_jobs=None 
         )
         
         return preprocessor

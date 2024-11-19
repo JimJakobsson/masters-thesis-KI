@@ -29,7 +29,7 @@ class MLExperiment:
         return self.preprocessor.set_labels(combined_tables) 
     
     def prepare_features_and_labels(self, data):
-        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death', 'birthdate1'], axis=1)
+        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death'], axis=1)
         y = data['labels']
         return X, y
     # def smote_transform(self, X, y=None):
@@ -107,7 +107,8 @@ class MLExperiment:
         # Calculate mean importance for each feature
         feature_importance = pd.DataFrame({
             'feature': list(aggregated_shap.keys()),
-            'importance': [np.mean(np.abs(values)) for values in aggregated_shap.values()]
+            'importance': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
+            'importance_mean': [np.mean(values) for values in aggregated_shap.values()],
         })
         print(f"\nProcessed {len(processed_features)} categorical features out of {len(original_feature_names)} original features")
         print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
@@ -117,8 +118,8 @@ class MLExperiment:
         # Load the data from the server
         data = self.load_data()
         ages = AgeExploration()
-        # ages.box_plot_age_combined(data)
-        # ages.age_distribution_histogram(data)
+        ages.box_plot_age_combined(data)
+        ages.age_distribution_histogram(data)
         # data = self.preprocessor.set_ages(data)
         # Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
@@ -138,7 +139,7 @@ class MLExperiment:
         print("Number of samples:", X.shape[0])
         print("y shape:", y.shape)
         #print values in X_train that is string
-        print(X_train.select_dtypes(include=['object']).head())
+        # print(X_train.select_dtypes(include=['object']).head())
 
         # Create pipeline to preprocess data
         self.create_pipeline()
@@ -169,7 +170,7 @@ class MLExperiment:
         self.evaluator.plot_shap_summary(aggregated_shap_values, X_test, ordered_features)
         
         # Create waterfall plot
-        X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
+        # X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
         # Explain a strong class 1 prediction
         self.evaluator.plot_waterfall(best_model, X_test, 1, 20)
         # self.evaluator.plot_waterfall(X_test_transformed, feature_names, X_test)
