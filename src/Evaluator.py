@@ -69,57 +69,95 @@ class Evaluator:
                 raise ValueError(f'Invalid transformer name: {name}')
         return feature_names
 
-    def aggregate_shap_values(self, shap_values, feature_names, preprocessor):
-        """
-        Aggregate SHAP values for categorical features that were one-hot encoded.
+    # def aggregate_shap_values(self, shap_values, feature_names, preprocessor):
+    #     """
+    #     Aggregate SHAP values for categorical features that were one-hot encoded.
 
-        Args:
-            shap_values (np.ndarray): SHAP values
-            feature_names (list): Feature names
-        Returns:
-            Tuple containing:
-            - Dictionary mapping original feature names to aggregated SHAP values
-            - List of original feature names before one-hot encoding
-        """
-        # Get original feature names before one-hot encoding
+    #     Args:
+    #         shap_values (np.ndarray): SHAP values
+    #         feature_names (list): Feature names
+    #     Returns:
+    #         Tuple containing:
+    #         - Dictionary mapping original feature names to aggregated SHAP values
+    #         - List of original feature names before one-hot encoding
+    #     """
+    #     # Get original feature names before one-hot encoding
+    #     original_feature_names = preprocessor.numeric_features + preprocessor.categorical_features
+    #     feature_names = np.array(feature_names)
+
+    #     #initialize dictionary to store aggregated SHAP values
+    #     aggregated_shap = {}
+    #     processed_features = []
+
+    #     #For binary classification, take absolute values and average across classes
+    #     if len(shap_values.shape) == 3:  # Shape: (n_samples, n_features, n_classes)
+    #         #Use .mean or .sum?
+    #         # shap_values = np.abs(shap_values).mean(axis=2)
+    #         shap_values = np.abs(shap_values).sum(axis=2)
+
+    #     #Iterate throguh each feature
+    #     current_idx = 0
+    #     for feature in original_feature_names:
+    #         if feature in preprocessor.numeric_features:
+    #             # If feature is numeric, add the SHAP values directly
+    #             aggregated_shap[feature] = shap_values[:, current_idx]
+    #             current_idx += 1
+    #         else:
+    #             #For categorical features, find all realted one-hot encoded columns
+    #             feature_mask = np.array([col.startswith(f"{feature}_") for col in feature_names])
+    #             if np.any(feature_mask):
+    #                 #Sum SHAP values across all one-hot encoded columns
+    #                 aggregated_values = np.abs(shap_values[:, feature_mask]).sum(axis=1)
+    #                 aggregated_shap[feature] = aggregated_values
+    #                 processed_features.append(feature)
+    #                 current_idx += np.sum(feature_mask)
+    #     # Calculate mean importance for each feature
+    #     feature_importance = pd.DataFrame({
+    #         'feature': list(aggregated_shap.keys()),
+    #         'importance_abs_mean': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
+    #         'importance_mean': [np.mean(values) for values in aggregated_shap.values()]
+    #     })
+    #     print(f"\nProcessed {len(processed_features)} categorical features out of {len(original_feature_names)} original features")
+    #     print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
+
+    #     return aggregated_shap, feature_importance
+    def aggregate_shap_values(self, shap_values, feature_names, preprocessor):
+        """Aggregate SHAP values for categorical features without using absolute values"""
         original_feature_names = preprocessor.numeric_features + preprocessor.categorical_features
         feature_names = np.array(feature_names)
-
-        #initialize dictionary to store aggregated SHAP values
         aggregated_shap = {}
-        processed_features = []
-
-        #For binary classification, take absolute values and average across classes
-        if len(shap_values.shape) == 3:  # Shape: (n_samples, n_features, n_classes)
-            #Use .mean or .sum?
-            # shap_values = np.abs(shap_values).mean(axis=2)
-            shap_values = np.abs(shap_values).sum(axis=2)
-
-        #Iterate throguh each feature
+        
+        # if len(shap_values.shape) == 3:
+        #     print("The shape of SHAP values is 3")
+        #     # For binary classification, use values for class 1 prediction
+        shap_values = shap_values[:, :, 1]
+        
         current_idx = 0
+        processed_indices = set()
         for feature in original_feature_names:
             if feature in preprocessor.numeric_features:
-                # If feature is numeric, add the SHAP values directly
-                aggregated_shap[feature] = shap_values[:, current_idx]
-                current_idx += 1
+                if current_idx not in processed_indices:
+                    aggregated_shap[feature] = shap_values[:, current_idx]
+                    processed_indices.add(current_idx)
+                    current_idx += 1
             else:
-                #For categorical features, find all realted one-hot encoded columns
                 feature_mask = np.array([col.startswith(f"{feature}_") for col in feature_names])
                 if np.any(feature_mask):
-                    #Sum SHAP values across all one-hot encoded columns
-                    aggregated_values = np.abs(shap_values[:, feature_mask]).sum(axis=1)
-                    aggregated_shap[feature] = aggregated_values
-                    processed_features.append(feature)
+                    indices = np.where(feature_mask)[0]
+                    if not any(idx in processed_indices for idx in indices):
+
+                        # Sum without taking absolute values
+                        aggregated_values = shap_values[:, feature_mask].sum(axis=1)
+                        aggregated_shap[feature] = aggregated_values
+                        processed_indices.update(indices)
                     current_idx += np.sum(feature_mask)
-        # Calculate mean importance for each feature
+        
         feature_importance = pd.DataFrame({
             'feature': list(aggregated_shap.keys()),
             'importance_abs_mean': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
             'importance_mean': [np.mean(values) for values in aggregated_shap.values()]
         })
-        print(f"\nProcessed {len(processed_features)} categorical features out of {len(original_feature_names)} original features")
-        print(f"Number of samples in SHAP values: {shap_values.shape[0]}")
-
+        
         return aggregated_shap, feature_importance
     def create_explainer(self,model, data=None):
         classifier = model.named_steps['classifier']
@@ -241,30 +279,53 @@ class Evaluator:
         plt.tight_layout()
         plt.savefig('feature_importance_aggregated.pdf')
         plt.close()
-
-    def plot_shap_summary(self, aggregated_shap, X_test, ordered_features):
-        """Create SHAP summary plot"""
+    def plot_shap_summary(self, aggregated_shap, X_test):
+        """Create SHAP summary plot showing both positive and negative values"""
         
         # Create SHAP matrix and corresponding feature matrix
-        aggregated_shap_matrix = np.column_stack([aggregated_shap[feature] for feature in ordered_features])
-        X_test_features = X_test[ordered_features] #.copy() perhaps
+        aggregated_shap_matrix = np.column_stack([aggregated_shap[feature] for feature in aggregated_shap.keys()])
+        X_test_features = X_test[list(aggregated_shap.keys())]
 
         print("\nShape of aggregated SHAP matrix:", aggregated_shap_matrix.shape)
         print("Shape of X_test_features:", X_test_features.shape)
 
-        #Summary plot
+        # Summary plot (beeswarm)
         plt.figure(figsize=(10, 12))
-        shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=False)
+        shap.summary_plot(
+            aggregated_shap_matrix, 
+            X_test_features, 
+            feature_names=list(aggregated_shap.keys()),
+            plot_type="dot",  # Explicitly specify dot plot
+            show=False,
+            max_display=20,  # Limit to top 20 features for clarity
+            sort=True
+        )
         plt.tight_layout()
         plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
         plt.close()
+    # def plot_shap_summary(self, aggregated_shap, X_test, ordered_features):
+    #     """Create SHAP summary plot"""
+        
+    #     # Create SHAP matrix and corresponding feature matrix
+    #     aggregated_shap_matrix = np.column_stack([aggregated_shap[feature] for feature in ordered_features])
+    #     X_test_features = X_test[ordered_features] #.copy() perhaps
 
-        #SHAP bar plot for absolute mean SHAP values  
-        plt.figure(figsize=(10, 12))
-        shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=False)
-        plt.tight_layout()
-        plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
-        plt.close()
+    #     print("\nShape of aggregated SHAP matrix:", aggregated_shap_matrix.shape)
+    #     print("Shape of X_test_features:", X_test_features.shape)
+
+    #     #Summary plot
+    #     plt.figure(figsize=(10, 12))
+    #     shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=False)
+    #     plt.tight_layout()
+    #     plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
+    #     plt.close()
+
+    #     #SHAP bar plot for absolute mean SHAP values  
+    #     plt.figure(figsize=(10, 12))
+    #     shap.summary_plot(aggregated_shap_matrix, X_test_features, feature_names=ordered_features, show=False)
+    #     plt.tight_layout()
+    #     plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
+    #     plt.close()
     
     def plot_waterfall(self, best_model, X_test, class_to_explain, top_n=10):
         """
