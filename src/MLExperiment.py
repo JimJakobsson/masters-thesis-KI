@@ -23,13 +23,21 @@ class MLExperiment:
         self.preprocessor = preprocessor
         self.evaluator = evaluator
         self.pipeline = None
+        self.removed_features = []  # Track removed features
+
 
     def load_data(self):
         combined_tables = self.server_connection.read_table()
         return self.preprocessor.set_labels(combined_tables) 
     
     def prepare_features_and_labels(self, data):
-        X = data.drop(['labels', 'twinnr', 'death_yrmon', 'age_death'], axis=1)
+        drop_columns = ['labels', 'twinnr', 'death_yrmon', 'age_death']
+
+        # Add removed features to drop columns
+        if hasattr(self, 'removed_features') and self.removed_features:
+            drop_columns.extend(self.removed_features)
+        
+        X = data.drop(columns=[col for col in drop_columns if col in data.columns], axis=1)
         y = data['labels']
         return X, y
     # def smote_transform(self, X, y=None):
@@ -41,6 +49,9 @@ class MLExperiment:
     #     print(f"Resampled class distribution: {Counter(y_resampled)}")
     #     return X_resampled, y_resampled
     def create_pipeline(self):
+        # Update the preprocessor with removed features
+        if hasattr(self, 'removed_features'):
+            self.preprocessor.excluded_features = self.removed_features
         preprocessing_pipeline = self.preprocessor.create_pipeline()
         self.pipeline = Pipeline(steps=[
             ('preprocessor', preprocessing_pipeline),
@@ -66,10 +77,11 @@ class MLExperiment:
     
     def run(self):
         # Load the data from the server
-        data = self.load_data()
-        ages = AgeExploration()
-        ages.box_plot_age_combined(data)
-        ages.age_distribution_histogram(data)
+        data_original = self.load_data()
+        data = data_original.copy()
+        # ages = AgeExploration()
+        # ages.box_plot_age_combined(data)
+        # ages.age_distribution_histogram(data)
         # data = self.preprocessor.set_ages(data)
         # Prepare the features and add labels
         X, y = self.prepare_features_and_labels(data)
@@ -113,18 +125,53 @@ class MLExperiment:
         # Plot feature importance
         self.evaluator.plot_feature_importance()
         
-        # Get ordered features for SHAP plots
-        # ordered_features = self.evaluator.feature_importance.sort_values(
-        #     by='importance_mean', ascending=False)['feature'].tolist()
-        
         self.evaluator.plot_shap_summary(aggregated_shap_values, X_test)
         # Plot SHAP summary
         
         # Create waterfall plot
-        # X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
         # Explain a strong class 1 prediction
         self.evaluator.plot_waterfall(best_model, X_test, 1, 20)
-        # self.evaluator.plot_waterfall(X_test_transformed, feature_names, X_test)
 
+        #Define age groups
+        age_groups = { 
+            '50-59': {50, 59},
+            '60-69': {60, 69},
+            '70-79': {70, 79},
+        }
+        # set age in data as the difference between the first four digits of birthdate1 and 1985
+        data_original['age'] = 1985 - data_original['birthdate1'].astype(str).str[:4].astype(int)
+      
+        for group_name, (age_min, age_max) in age_groups.items():
+            # Filter data for the age group
+            age_group_data = data_original[(data_original['age'] >= age_min) & (data_original['age'] <= age_max)]
+            X_group, y_group = self.prepare_features_and_labels(age_group_data)
+            # Use the same feature removal as the main dataset
+            X_group = X_group.drop(columns=[col for col in self.removed_features if col in X_group.columns])
+            
+
+            # Split the data
+            X_train_group, X_test_group, y_train_group, y_test_group = train_test_split(X_group, y_group, test_size=0.2, random_state=42)
+            y_train_group = y_train_group.astype(int)
+            y_test_group = y_test_group.astype(int)
+
+            # Fit the model for the age group
+            grid_search.fit(X_train_group, y_train_group)
+            
+            #Basic model evaluation for the age group
+            self.evaluator.evaluate_model(grid_search, X_test_group, y_test_group)
+
+            # Calculate SHAP values and feature importance for the age group
+            aggregated_shap_values_group, feature_names_group = self.evaluator.calculate_feature_importance(best_model, X_test_group, preprocessor)
+
+            # Plot feature importance for the age group
+            self.evaluator.plot_feature_importance(feature_importance=self.evaluator.feature_importance, num_features=20, output_path=f'feature_importance_{group_name}.pdf')
+
+            # Plot SHAP summary for the age group
+            self.evaluator.plot_shap_summary(aggregated_shap_values_group, X_test_group, output_path=f'shap_summary_plot_{group_name}.pdf')
+
+            # Plot waterfall plot for the age group
+            self.evaluator.plot_waterfall(best_model, X_test_group, 1, 20, output_path=f'waterfall_plot_{group_name}.pdf')
+
+                
 
      

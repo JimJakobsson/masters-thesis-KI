@@ -237,7 +237,7 @@ class Evaluator:
 
         return self.aggregated_shap, feature_names
 
-    def plot_feature_importance(self, feature_importance=None, num_features=20):
+    def plot_feature_importance(self, feature_importance=None, output_path = None, num_features=20):
         """Plot featrue importance"""
         if feature_importance is None:
             feature_importance = self.feature_importance
@@ -263,7 +263,10 @@ class Evaluator:
         plt.tight_layout()
         
         # Save plot
-        output_path = os.path.join(self.output_dir, 'feature_importance.pdf')
+        if output_path:
+            plt.savefig(output_path, format='pdf', bbox_inches='tight')
+        else:
+            output_path = os.path.join('feature_importance.pdf')
         plt.savefig(output_path, format='pdf', bbox_inches='tight')
         plt.close()
 
@@ -277,9 +280,12 @@ class Evaluator:
         plt.ylabel('Feature')
         plt.title('Feature Importance')
         plt.tight_layout()
-        plt.savefig('feature_importance_aggregated.pdf')
+        if output_path:
+            plt.savefig(output_path, format='pdf', bbox_inches='tight')
+        else:
+            plt.savefig('feature_importance_aggregated.pdf')
         plt.close()
-    def plot_shap_summary(self, aggregated_shap, X_test):
+    def plot_shap_summary(self, aggregated_shap, X_test, output_path=None):
         """Create SHAP summary plot showing both positive and negative values"""
         
         # Create SHAP matrix and corresponding feature matrix
@@ -301,7 +307,10 @@ class Evaluator:
             sort=True
         )
         plt.tight_layout()
-        plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
+        if output_path:
+            plt.savefig(output_path, format='pdf', bbox_inches='tight')
+        else:
+            plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
         plt.close()
     # def plot_shap_summary(self, aggregated_shap, X_test, ordered_features):
     #     """Create SHAP summary plot"""
@@ -327,7 +336,7 @@ class Evaluator:
     #     plt.savefig(f'{self.output_dir}/shap_summary_plot_aggregated.pdf')
     #     plt.close()
     
-    def plot_waterfall(self, best_model, X_test, class_to_explain, top_n=10):
+    def plot_waterfall(self, best_model, X_test, class_to_explain, top_n=10, output_path=None):
         """
         Create SHAP waterfall plot for an observation that strongly predicts the class of interest
         
@@ -390,8 +399,10 @@ class Evaluator:
         plt.gcf().set_tight_layout(True)
         plt.subplots_adjust(left=0.3)
         plt.margins(y=0.1)
-        
-        plt.savefig(f'{self.output_dir}/shap_waterfall_plot_class_{class_to_explain}.pdf', 
+        if output_path:
+            plt.savefig(output_path, format='pdf', bbox_inches='tight')
+        else:
+            plt.savefig(f'{self.output_dir}/shap_waterfall_plot_class_{class_to_explain}.pdf', 
                     bbox_inches='tight', dpi=300)
         plt.close()
 

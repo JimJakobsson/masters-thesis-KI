@@ -121,7 +121,7 @@ class PreProcessing:
     #     X = X.loc[:, X.isnull().mean() < threshold]
     #     y = y.loc[X.index]
     #     return X, y
-    def delete_null_features(self, X: pd.DataFrame, y: pd.Series):
+    def delete_null_features(self, X, y):
         """
         Remove features with too many null values and return cleaned X and y.
         """
@@ -139,7 +139,6 @@ class PreProcessing:
         y = y.loc[X.index]
         
         return X, y
-        #double check
     def get_feature_names(self, preprocessor, X):
         # Get feature names for numeric features
         numeric_features = X.columns.difference(self.categorical_features).tolist()

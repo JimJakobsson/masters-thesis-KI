@@ -54,11 +54,11 @@ class AgeExploration:
         age = 1985 - birthdate1.astype(str).str[:4].astype(int)
         age_df = pd.DataFrame({'age': age})
         # Plot
-        plt.figure(figsize=(20, 15))
+        plt.figure(figsize=(10, 6))
         bins = list(range(40, 90, 5))
         sns.histplot(data=age_df, x='age', bins=bins, kde=True)
         plt.xticks(bins)
-        plt.title('Age distribution in IPT1', fontsize=16)
+        plt.title('Age distribution in IPT1')
         plt.xlabel('Age', fontsize=14)
         plt.ylabel('Count', fontsize=14)
         plt.savefig('age_distribution_hist.pdf', format='pdf')
