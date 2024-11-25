@@ -81,6 +81,7 @@ class Main:
         evaluator = Evaluator()
         connection = ServerConnectionIPT1()
         # connection.read_table()
+        hello = "hello"
         experiment = MLExperiment(rf_model, rf_params, preprocessor, evaluator, connection)
 
         experiment.run()

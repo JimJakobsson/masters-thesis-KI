@@ -21,6 +21,24 @@ class PreProcessing:
         return self._threshold
     
     def set_labels(self, combined_tables) -> None:
+        """
+        Sets labels for the given combined tables based on the 'death_yrmon' column.
+        This method processes the 'death_yrmon' column to create labels indicating whether
+        the year is above or below a certain threshold. It handles missing values and ensures
+        the 'death_yrmon' column is in a consistent string format before creating the labels.
+        Args:
+            combined_tables (pd.DataFrame): The combined tables containing the 'death_yrmon' column.
+        Returns:
+            pd.DataFrame: The modified DataFrame with a new 'labels' column containing the labels.
+        Steps:
+            1. Copy the input DataFrame to avoid modifying the original data.
+            2. Remove rows with null values in the 'death_yrmon' column.
+            3. Convert 'death_yrmon' to a string format.
+            4. Create labels based on the year extracted from 'death_yrmon'.
+            5. Drop rows with null labels.
+            6. Convert the 'labels' column to integers.
+            7. Print the count of each label value.
+        """
         #Copy to avoid modifying the original data
         combined_tables = combined_tables.copy()
         #remove row with null death_yrmon
