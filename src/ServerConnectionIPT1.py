@@ -40,7 +40,7 @@ class ServerConnectionIPT1(DatabaseReader):
       
             #write to file
             #combined_tables.to_csv('combined_tables.csv', index=False)
-            combined_tables = pd.read_csv('/nfs/home/jimjak/Master-Thesis/misc/combined_tables.csv')
+            #combined_tables = pd.read_csv('/nfs/home/jimjak/Master-Thesis/misc/combined_tables.csv')
             
             print(f"Query executed successfully. DataFrame shape: {combined_tables.shape}")
             return combined_tables
