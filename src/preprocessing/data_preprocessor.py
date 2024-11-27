@@ -4,7 +4,7 @@ import pandas as pd
 
 from preprocessing.preprocessing_result import PreprocessingResult
 from ..config import PreprocessingConfig
-from .feature_detection import FeatureDetector
+from .feature_detector import FeatureDetector
 from .label_processor import LabelProcessor
 from .data_cleaner import DataCleaner
 from .pipeline_creator import PreprocessingPipeline

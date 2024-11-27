@@ -30,6 +30,7 @@ class LabelProcessor:
         
         self._print_label_distribution(df['labels'])
         return df
+    
     @staticmethod
     def _create_label(self, death_yrmon: str) -> Optional[int]:
         """Create label based on year from 'death_yrmon'"""
@@ -41,6 +42,7 @@ class LabelProcessor:
         except (ValueError, TypeError):
             return None
         
+    @staticmethod    
     def _print_label_distribution(self, labels: pd.Series) -> None:
         """Print label distribution"""
         distribution = labels.value_counts().to_dict()
