@@ -5,8 +5,8 @@ from datetime import datetime
 import logging
 
 from .model_selector import ModelSelector
-from ..experiment.experiment import Experiment
-from ..database.reader import DatabaseReader
+from experiment.experiment import Experiment
+from database.reader import DatabaseReader
 
 class ExperimentSuite:
     """Runs experiments with multiple models"""
