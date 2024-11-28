@@ -1,3 +1,7 @@
+
+from dataclasses import dataclass
+
+
 @dataclass
 class ModelConfig:
     """Confiuguratoin for model types and their corresponding SHAP explainers"""

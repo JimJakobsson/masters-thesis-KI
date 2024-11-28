@@ -6,6 +6,7 @@ class LabelProcessor:
     def __init__(self, threshold: int = 2005):
         self._threshold = threshold
     
+
     def create_labels(self, df: pd.DataFrame) -> pd.DataFrame:
         """Create binary labels based on the 'death_yrmon' column"""
 
@@ -21,7 +22,7 @@ class LabelProcessor:
 
         # Create labels
         df['labels'] = df['death_yrmon'].apply(
-            lambda x: self._create_label(x)
+            lambda x: self._create_label(x, self._threshold)
         )
         
         # Clean up and validate
@@ -32,18 +33,18 @@ class LabelProcessor:
         return df
     
     @staticmethod
-    def _create_label(self, death_yrmon: str) -> Optional[int]:
+    def _create_label(death_yrmon: str, threshold: int) -> Optional[int]:
         """Create label based on year from 'death_yrmon'"""
         try:
             if death_yrmon and len(death_yrmon) >= 4:
                 year = int(death_yrmon[:4])
-                return 0 if year > self._threshold else 1
+                return 0 if year > threshold else 1
             return None
         except (ValueError, TypeError):
             return None
         
     @staticmethod    
-    def _print_label_distribution(self, labels: pd.Series) -> None:
+    def _print_label_distribution(labels: pd.Series) -> None:
         """Print label distribution"""
         distribution = labels.value_counts().to_dict()
         print(f"Labels created: {distribution}")

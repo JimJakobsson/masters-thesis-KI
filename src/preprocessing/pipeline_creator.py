@@ -40,7 +40,7 @@ class PipelineCreator:
     def _create_categorical_pipeline() -> Pipeline:
         """Create a pipeline for categorical features"""
         return Pipeline(steps=[
-            ('onehot', OneHotEncoder(handle_unknown='ignore', sparse=False))
+            ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
         ])
     
     @staticmethod
@@ -53,6 +53,9 @@ class PipelineCreator:
     
     def get_feature_names(self, column_transformer: ColumnTransformer) -> List[str]:
         """Get feature names after preprocessing"""
+        if not hasattr(column_transformer, 'transformers_'):
+            raise ValueError("ColumnTransformer is not fitted yet. Please fit the transformer before getting feature names.")
+        
         numeric_features = self.numeric_features
         categorical_transformer = column_transformer.named_transformers_['cat']
         categorical_features = categorical_transformer.named_steps['onehot'].get_feature_names_out(

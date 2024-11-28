@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 import logging
 import sys
 from typing import List, Optional
@@ -10,15 +11,15 @@ from experiment.experiment_config import ExperimentConfig
 from models.experiment_suite import ExperimentSuite
 from models.model_selector import ModelSelector
 
-
 class ExperimentRunner:
     """Manages the execution of machine learning experiments"""
     
-    def __init__(self ):
+    def __init__(self):
         # Create timestamp for this run
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.output_dir = 'outputs' / self.timestamp
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.output_dir = os.path.join('outputs', self.timestamp)
+        os.makedirs(self.output_dir, exist_ok=True) # Create output directory, if it does not exist
         
         # Initialize components
         self.setup_logging()
@@ -26,11 +27,12 @@ class ExperimentRunner:
     
     def setup_logging(self) -> None:
         """Configure logging with both file and console output"""
+        logging_path = os.path.join(self.output_dir, 'experiment.log')
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(self.output_dir / 'experiment.log'),
+                logging.FileHandler(logging_path),
                 logging.StreamHandler(sys.stdout)
             ]
         )
@@ -50,11 +52,11 @@ class ExperimentRunner:
     def create_experiment_config(self) -> ExperimentConfig:
         """Create configuration for experiments"""
         return ExperimentConfig(
-            excluded_columns=['labels', 'twinnr', 'death_yrmon', 'age_death'],
-            base_year=1985,
-            test_size=0.2,
-            random_state=42,
-            cv_folds=3
+            # excluded_columns=['labels', 'twinnr', 'death_yrmon', 'age_death'],
+            # base_year=1985,
+            # test_size=0.2,
+            # random_state=42,
+            # cv_folds=3
         )
     def list_available_models(self) -> None:
         """Print information about available models"""
@@ -65,31 +67,52 @@ class ExperimentRunner:
             
     def run_experiments(self, selected_models: Optional[List[str]] = None) -> None:
         """Run the experiment suite with selected models"""
-        try:
-            # Setup database connection
-            db_reader = self.setup_database()
+        # Setup database connection
+        db_reader = self.setup_database()
+        
+        # Create experiment configuration
+        experiment_config = self.create_experiment_config()
+        
+        # Initialize and run experiment suite
+        suite = ExperimentSuite(
+            db_reader=db_reader,
+            output_dir=self.output_dir,
+            models=selected_models,
+            config=experiment_config
+        )
+        
+        # Display available models
+        self.list_available_models()
+        
+        # Run experiments
+        logging.info("\nStarting experiments...")
+        suite.run_experiments()
+        logging.info("All experiments completed successfully")
+        # try:
+        #     # Setup database connection
+        #     db_reader = self.setup_database()
             
-            # Create experiment configuration
-            experiment_config = self.create_experiment_config()
+        #     # Create experiment configuration
+        #     experiment_config = self.create_experiment_config()
             
-            # Initialize and run experiment suite
-            suite = ExperimentSuite(
-                db_reader=db_reader,
-                output_dir=self.output_dir,
-                models=selected_models,
-                config=experiment_config
-            )
+        #     # Initialize and run experiment suite
+        #     suite = ExperimentSuite(
+        #         db_reader=db_reader,
+        #         output_dir=self.output_dir,
+        #         models=selected_models,
+        #         config=experiment_config
+        #     )
             
-            # Display available models
-            self.list_available_models()
+        #     # Display available models
+        #     self.list_available_models()
             
-            # Run experiments
-            logging.info("\nStarting experiments...")
-            suite.run_experiments()
-            logging.info("All experiments completed successfully")
+        #     # Run experiments
+        #     logging.info("\nStarting experiments...")
+        #     suite.run_experiments()
+        #     logging.info("All experiments completed successfully")
             
-        except Exception as e:
-            logging.error(f"Experiment execution failed: {str(e)}", exc_info=True)
-            raise
-        finally:
-            logging.info(f"\nResults saved in: {self.output_dir}")
+        # except Exception as e:
+        #     logging.error(f"Experiment execution failed: {str(e)}", exc_info=True)
+        #     raise
+        # finally:
+        #     logging.info(f"\nResults saved in: {self.output_dir}")

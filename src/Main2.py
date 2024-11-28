@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import logging
+import sys
 from typing import Dict, Any
 
 # ML models and utilities
@@ -11,7 +12,7 @@ from experiment_runner import ExperimentRunner
 
 # Custom modules
 # from src.database.config import DatabaseConfig
-from .database.IPT1_reader import IPT1Reader
+from database.IPT1_reader import IPT1Reader
 # from src.preprocessing.config import PreprocessingConfig 
 # from src.ml.config import ExperimentConfig
 # from src.ml.experiment import MLExperiment

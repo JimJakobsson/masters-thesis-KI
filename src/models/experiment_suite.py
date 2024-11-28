@@ -1,12 +1,17 @@
+import os
 from typing import List, Optional
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
 import logging
 
+from experiment.experiment_config import ExperimentConfig
+
 from .model_selector import ModelSelector
 from experiment.experiment import Experiment
 from database.reader import DatabaseReader
+
+from pathlib import Path
 
 class ExperimentSuite:
     """Runs experiments with multiple models"""
@@ -14,9 +19,11 @@ class ExperimentSuite:
     def __init__(self, 
                  db_reader: DatabaseReader,
                  output_dir: Path,
+                 config: Optional[ExperimentConfig] = None,
                  models: Optional[List[str]] = None):
         self.db_reader = db_reader
         self.output_dir = output_dir
+        self.confg = config
         self.model_selector = ModelSelector()
         self.models = models or self.model_selector.get_available_models()
     
@@ -30,7 +37,7 @@ class ExperimentSuite:
                 model_config = self.model_selector.get_model_config(model_name)
                 
                 # Create model-specific output directory
-                model_output_dir = self.output_dir / model_name
+                model_output_dir = Path(os.path.join(self.output_dir, model_name))
                 model_output_dir.mkdir(parents=True, exist_ok=True)
                 
                 # Run experiment

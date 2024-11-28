@@ -9,8 +9,8 @@ class ModelSelector:
     def __init__(self):
         self.registry = {
             'random_forest': ModelRegistry.get_random_forest_config,
-            'gradient_boosting': ModelRegistry.get_gradient_boosting_config,
-            'logistic_regression': ModelRegistry.get_logistic_regression_config,
+            # 'gradient_boosting': ModelRegistry.get_gradient_boosting_config,
+            # 'logistic_regression': ModelRegistry.get_logistic_regression_config,
             # 'svm': ModelRegistry.get_svm_config,
             # 'xgboost': ModelRegistry.get_xgboost_config,
             # 'catboost': ModelRegistry.get_catboost_config

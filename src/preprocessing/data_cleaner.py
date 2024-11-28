@@ -5,10 +5,10 @@ from typing import Tuple
 class DataCleaner:
     """Handles data cleaning operations"""
 
-    def __init__(self, null_threshold: float = 0.8):
+    def __init__(self, null_threshold: float):
         self.null_threshold = null_threshold
 
-    def remove_high_null_features(self, X: pd.DataFrame, y: pd.Series) -> Tuple[pd.DataFrame, pd.Series]:
+    def remove_high_null_features(self, X: pd.DataFrame, y: pd.Series, ) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Remove features with high null ratios and return cleaned X and y.
 

@@ -2,11 +2,11 @@ import pandas as pd
 from typing import Tuple
 
 from experiment.experiment_config import ExperimentConfig, AgeGroup
-from ..preprocessing.preprocessing_result import PreprocessingResult
+from preprocessing.preprocessing_result import PreprocessingResult
 
 class DataHandler:
     def __init__(self, config: ExperimentConfig):
-        self.config = config
+        self.config = config or ExperimentConfig()
     
     def prepare_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         drop_cols = [col for col in self.config.excluded_columns if col in df.columns]

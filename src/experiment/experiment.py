@@ -22,7 +22,7 @@ class Experiment:
                  output_dir: Optional[Path] = None,
                  config: Optional[ExperimentConfig] = None):
         
-        self.config = ExperimentConfig()
+        self.config = config
         self.output_dir = Path(output_dir) if output_dir else Path('outputs')
         self.start_time = datetime.now()
         
@@ -64,6 +64,12 @@ class Experiment:
         # Load and process data
         raw_data = self.db_reader.read_ipt1_data()
         raw_data = self.data_handler.calculate_ages(raw_data)
+
+        #continue from here
+        #The current order needs to be modified to avoid data leakage. 
+        # We should split the data into train/test sets before any preprocessing that involves fitting 
+        # (like scaling or encoding)
+        # labeled_data = 
         prep_result = self.preprocessor.process(raw_data)
         
         # Train base model
