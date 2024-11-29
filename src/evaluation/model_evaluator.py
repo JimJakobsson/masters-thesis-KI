@@ -67,12 +67,79 @@ class ModelEvaluator(BaseEvaluator):
         self.shap_values = self.explainer.shap_values(X_test_transformed)
         feature_names = PipelineCreator.get_feature_names(best_model, preprocessor)
         
-        validate_shap_calculation(self.shap_values, feature_names)
+        # Aggregate SHAP values
         self.aggregated_shap, self.feature_importance = self._aggregate_shap_values(
-            self.shap_values, feature_names, preprocessor)
+            self.shap_values, 
+            feature_names, 
+            preprocessor
+        )
         
         return self.aggregated_shap, feature_names
     
+    def _aggregate_shap_values(self, 
+                             shap_values: np.ndarray,
+                             feature_names: List[str],
+                             preprocessor: Any) -> Tuple[Dict[str, np.ndarray], pd.DataFrame]:
+        """
+        Aggregate SHAP values for categorical features that were one-hot encoded.
+        
+        Args:
+            shap_values: SHAP values from explainer
+            feature_names: Names of features after preprocessing
+            preprocessor: Original preprocessor containing feature information
+            
+        Returns:
+            Tuple containing:
+            - Dictionary mapping original feature names to aggregated SHAP values
+            - DataFrame with feature importance statistics
+        """
+        # If we have binary classification, use values for positive class
+        if len(shap_values.shape) == 3:
+            shap_values = shap_values[:, :, 1]
+        
+        # Get original feature names (before one-hot encoding)
+        original_features = preprocessor.numeric_features + preprocessor.categorical_features
+        feature_names = np.array(feature_names)
+        
+        # Initialize dictionary for aggregated SHAP values
+        aggregated_shap = {}
+        current_idx = 0
+        
+        # Process each original feature
+        for feature in original_features:
+            if feature in preprocessor.numeric_features:
+                # For numeric features, just copy the SHAP values directly
+                if current_idx < len(feature_names):
+                    aggregated_shap[feature] = shap_values[:, current_idx]
+                    current_idx += 1
+            else:
+                # For categorical features, find all related one-hot encoded columns
+                feature_mask = np.array([col.startswith(f"{feature}_") for col in feature_names])
+                
+                if np.any(feature_mask):
+                    # Sum SHAP values across all one-hot encoded columns
+                    # Don't take absolute values to preserve direction of impact
+                    aggregated_values = shap_values[:, feature_mask].sum(axis=1)
+                    aggregated_shap[feature] = aggregated_values
+                    current_idx += np.sum(feature_mask)
+        
+        # Create feature importance DataFrame
+        self.feature_importance = pd.DataFrame({
+            'feature': list(aggregated_shap.keys()),
+            'importance_abs_mean': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
+            'importance_mean': [np.mean(values) for values in aggregated_shap.values()],
+            'importance_std': [np.std(values) for values in aggregated_shap.values()]
+        })
+        
+        # Sort by absolute importance
+        feature_importance_abs_mean = self.feature_importance.sort_values(
+            'importance_abs_mean', 
+            ascending=False
+        ).reset_index(drop=True)
+        
+        
+        return aggregated_shap, feature_importance_abs_mean, 
+     
     def _create_explainer(self, model: BaseEstimator, 
                          data: Optional[np.ndarray] = None) -> Any:
         """Create appropriate SHAP explainer based on model type"""
@@ -93,13 +160,40 @@ class ModelEvaluator(BaseEvaluator):
         except Exception as e:
             raise Exception(f"Error creating SHAP explainer: {str(e)}")
         
-    def plot_all(self, best_model: BaseEstimator, X_test: pd.DataFrame, 
-                 X: pd.DataFrame, y: pd.Series, class_to_explain: int = 1) -> None:
-        """Generate all plots"""
+    def plot_all(self, model: BaseEstimator, 
+                 X_train: pd.DataFrame, X_test: pd.DataFrame,
+                 y_train: pd.Series, y_test: pd.Series,
+                 class_to_explain: int = 1,
+                 output_suffix: str = '') -> None:
+        """
+        Generate all plots using the appropriate data for each visualization.
+        
+        Args:
+            model: Trained model
+            X_train: Training features for learning curves
+            X_test: Test features for SHAP analysis
+            y_train: Training labels for learning curves
+            y_test: Test labels for evaluation
+            class_to_explain: Class to explain in SHAP waterfall plot
+            output_suffix: Suffix for output files
+        """
+        if not all([self.feature_importance is not None,
+                   self.aggregated_shap is not None,
+                   self.explainer is not None]):
+            raise ValueError("Must run calculate_feature_importance before plotting")
 
-        self.model_visualiser.create_all_plots(best_model, X_test, X, y, 
-                                            self.feature_importance, self.aggregated_shap,
-                                            self.explainer)
+        self.model_visualiser.create_all_plots(
+            model=model,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            feature_importance=self.feature_importance,
+            aggregated_shap=self.aggregated_shap,
+            explainer=self.explainer,
+            class_to_explain=class_to_explain,
+            output_suffix=output_suffix
+        )
 
         # self.feature_plotter.plot_feature_importance(self.feature_importance)
         # self.shap_plotter.plot_shap_summary(self.aggregated_shap, X_test)

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 @dataclass
 class PreprocessingResult:
     """Container for preprocessing results"""
     X: pd.DataFrame
-    y: pd.Series
     preprocessor: ColumnTransformer
-    feature_names: list
+    feature_names: List[str]

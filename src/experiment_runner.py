@@ -77,8 +77,8 @@ class ExperimentRunner:
         suite = ExperimentSuite(
             db_reader=db_reader,
             output_dir=self.output_dir,
-            models=selected_models,
-            config=experiment_config
+            config=experiment_config,
+            models=selected_models
         )
         
         # Display available models

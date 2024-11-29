@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 
 from preprocessing.preprocessing_result import PreprocessingResult
 from config.preprocessing_config import PreprocessingConfig
@@ -17,35 +18,91 @@ class DataPreprocessor:
         self.feature_detector = FeatureDetector()
         self.label_processor = LabelProcessor()
         self.data_cleaner = DataCleaner(self.config.NULL_THRESHOLD)
-        self.featuer_names: Optional[list] = None
+        self.feature_names: Optional[list] = None
+        self.preprocessor: Optional[ColumnTransformer] = None
+        self.categorical_features: Optional[List[str]] = None
+        self.numeric_features: Optional[List[str]] = None
 
-    def process(self, df: pd.DataFrame) -> PipelineCreator:
-        """Process the input data.
-            Complete preprocessing pipeline that detects features, creates labels, removes high null features,
+    def create_labels(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Create labels from raw data"""
+        return self.label_processor.create_labels(data)
+
+    def get_features_and_target(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+        """Separate features and target from labeled data"""
+        X = data.drop(['labels', 'death_yrmon', 'twinnr'], axis=1)
+        y = data['labels']
+        return X, y
+
+    def process(self, X: pd.DataFrame, fit: bool = True) -> PreprocessingResult:
         """
-        # Create labels
-        df = self.label_processor.create_labels(df)
+        Process data with option to fit or just transform.
         
-        # Separate features and target
-        X = df.drop(['labels', 'death_yrmon', 'twinnr'], axis=1)
-        y = df['labels']
+        Args:
+            X: Input features
+            fit: Whether to fit the preprocessor (True for training, False for test)
+            
+        Returns:
+            PreprocessingResult containing processed data and metadata
+        """
+        try:
+            # Clean data (this doesn't require fitting)
+            X_cleaned = self.data_cleaner.clean_features(X)
+            
+            if fit:
+                # Only detect features and create pipeline when fitting
+                self.categorical_features, self.numeric_features = self.feature_detector.detect_feature_types(
+                    X_cleaned,
+                    max_unique=self.config.MAX_UNIQUE_VALUES_FOR_CATEGORICAL,
+                    min_count=self.config.MIN_COUNT_FOR_CATEGORICAL
+                )
+                
+                # Create and fit preprocessor
+                pipeline_creator = PipelineCreator(
+                    self.numeric_features, 
+                    self.categorical_features
+                )
+                self.preprocessor = pipeline_creator.create_columntransformer()
+                X_transformed = self.preprocessor.fit_transform(X_cleaned)
+                
+                # Get feature names after fitting
+                self.feature_names = pipeline_creator.get_feature_names(self.preprocessor)
+                
+            else:
+                # Verify preprocessor exists
+                if self.preprocessor is None:
+                    raise ValueError("Preprocessor must be fitted before transform")
+                
+                # Only transform using existing preprocessor
+                X_transformed = self.preprocessor.transform(X_cleaned)
+            
+            # Create DataFrame with feature names
+            X_processed = pd.DataFrame(
+                X_transformed,
+                columns=self.feature_names,
+                index=X.index
+            )
+            
+            return PreprocessingResult(
+                X=X_processed,
+                preprocessor=self.preprocessor,
+                feature_names=self.feature_names
+            )
+            
+        except Exception as e:
+            print(f"\nError processing features. Data sample:")
+            print(X.head())
+            print("\nFeature types:")
+            print(X.dtypes)
+            raise RuntimeError(f"Error in preprocessing: {str(e)}") from e
 
-        # Clean data
-        X, y = self.data_cleaner.remove_high_null_features(X, y)
-        
-        # Detect features
-        categorical_features, numeric_features = FeatureDetector.detect_feature_types(
-            X,
-            max_unique=self.config.MAX_UNIQUE_VALUES_FOR_CATEGORICAL,
-            min_count=self.config.MIN_COUNT_FOR_CATEGORICAL
-        )
-        
-        # Create preprocessing pipeline
-        pipeline = PipelineCreator(numeric_features, categorical_features)
-        preprocessor = pipeline.create_columntransformer()
+    def get_feature_names(self) -> List[str]:
+        """Get current feature names"""
+        if self.feature_names is None:
+            raise ValueError("No feature names available. Preprocessor must be fitted first.")
+        return self.feature_names
 
-        
-        # Get feature names
-        feature_names = pipeline.get_feature_names(preprocessor)
-        
-        return PreprocessingResult(X, y, preprocessor, feature_names)
+    def get_preprocessor(self) -> ColumnTransformer:
+        """Get current preprocessor"""
+        if self.preprocessor is None:
+            raise ValueError("Preprocessor not available. Must fit data first.")
+        return self.preprocessor

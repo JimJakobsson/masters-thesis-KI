@@ -1,18 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.model_selection import learning_curve
 from .baseplotter import BasePlotter
 
 class LearningCurvePlotter(BasePlotter):
     """Handles learning curve visualization"""
     
-    def plot(self, model, X: pd.DataFrame, y: pd.Series, 
-             output_suffix: str = '') -> None:
-        """Plot learning curve"""
+    def plot(self, 
+            model: BaseEstimator,
+            X_train: pd.DataFrame,
+            X_test: pd.DataFrame,
+            y_train: pd.Series,
+            y_test: pd.Series,
+            output_suffix: str = '') -> None:
+        """
+        Plot learning curves showing training and validation performance.
+        
+        Args:
+            model: Trained model
+            X_train: Training features
+            X_test: Test features
+            y_train: Training labels
+            y_test: Test labels
+            output_suffix: Suffix for output filename
+        """
         plt.figure(figsize=self.config.FIGURE_SIZES['learning'], 
                   dpi=self.config.DPI)
-        
+        # Combine data for cross-validation
+        X = pd.concat([X_train, X_test])
+        y = pd.concat([y_train, y_test])
         # Calculate curves
         train_sizes = np.linspace(0.1, 1.0, 10)
         train_sizes, train_scores, val_scores = learning_curve(

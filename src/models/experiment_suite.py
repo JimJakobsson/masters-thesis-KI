@@ -23,7 +23,7 @@ class ExperimentSuite:
                  models: Optional[List[str]] = None):
         self.db_reader = db_reader
         self.output_dir = output_dir
-        self.confg = config
+        self.config = config
         self.model_selector = ModelSelector()
         self.models = models or self.model_selector.get_available_models()
     
@@ -45,7 +45,8 @@ class ExperimentSuite:
                     model=model_config.model,
                     param_grid=model_config.param_grid,
                     db_reader=self.db_reader,
-                    output_dir=model_output_dir
+                    output_dir=model_output_dir,
+                    experiment_config=self.config
                 )
                 
                 experiment.run()
