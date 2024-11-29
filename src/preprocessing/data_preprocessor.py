@@ -22,14 +22,26 @@ class DataPreprocessor:
         self.preprocessor: Optional[ColumnTransformer] = None
         self.categorical_features: Optional[List[str]] = None
         self.numeric_features: Optional[List[str]] = None
-
+    def _validate_numeric_columns(self, X: pd.DataFrame) -> None:
+        """Validate numeric columns and raise informative errors if issues are found"""
+        if self.numeric_features is None:
+            return
+            
+        for col in self.numeric_features:
+            non_numeric_mask = pd.to_numeric(X[col], errors='coerce').isna() & X[col].notna()
+            if non_numeric_mask.any():
+                problematic_values = X.loc[non_numeric_mask, col].unique()
+                raise ValueError(
+                    f"Column '{col}' contains non-numeric values: {problematic_values}. "
+                    "Please check your data or consider treating this column as categorical."
+                )
     def create_labels(self, data: pd.DataFrame) -> pd.DataFrame:
         """Create labels from raw data"""
         return self.label_processor.create_labels(data)
 
     def get_features_and_target(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """Separate features and target from labeled data"""
-        X = data.drop(['labels', 'death_yrmon', 'twinnr'], axis=1)
+        X = data.drop(['labels', 'death_yrmon', 'twinnr', 'punching'], axis=1)
         y = data['labels']
         return X, y
 
@@ -55,7 +67,8 @@ class DataPreprocessor:
                     max_unique=self.config.MAX_UNIQUE_VALUES_FOR_CATEGORICAL,
                     min_count=self.config.MIN_COUNT_FOR_CATEGORICAL
                 )
-                
+                # Validate numeric columns before processing
+                self._validate_numeric_columns(X_cleaned)
                 # Create and fit preprocessor
                 pipeline_creator = PipelineCreator(
                     self.numeric_features, 

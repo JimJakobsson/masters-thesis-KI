@@ -10,7 +10,7 @@ class AgeGroup:
 
 @dataclass
 class ExperimentConfig:
-    excluded_columns: List[str] = ('labels', 'twinnr', 'death_yrmon', 'age_death')
+    excluded_columns: List[str] = ('labels', 'twinnr', 'death_yrmon', 'age_death', 'punching')
     base_year: int = 1985
     test_size: float = 0.2
     random_state: int = 42
