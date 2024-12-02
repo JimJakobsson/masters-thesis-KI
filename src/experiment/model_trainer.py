@@ -28,8 +28,13 @@ class ModelTrainer:
             cv=self.config.cv_folds,
             n_jobs=-1,
             verbose=1,
-            scoring='accuracy'
+            scoring='accuracy',
+            error_score='raise'
         )
+        print("y shape", y.shape)
+        print("x shape", X.shape)
+        #print all features after encoding
+        print("features", X.columns)
         grid_search.fit(X, y)
         return grid_search
     

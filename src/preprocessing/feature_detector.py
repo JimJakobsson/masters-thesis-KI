@@ -57,8 +57,8 @@ class FeatureDetector:
     #     return categorical_features, numeric_features
     @staticmethod
     def detect_feature_types(df: pd.DataFrame, 
-                           max_unique: int = 10,
-                           min_count: int = 10) -> Tuple[List[str], List[str]]:
+                            max_unique: int = 10,
+                            min_count: int = 10) -> Tuple[List[str], List[str]]:
         """
         Detect categorical and numerical features in the dataset.
         
@@ -74,40 +74,36 @@ class FeatureDetector:
         numeric_features = []
         
         for feature in df.columns:
-            # Check if the column contains any string values
-            # contains_strings = (df[feature]
-            #        .dropna()  # Remove NaN values
-            #        .astype(str)
-            #        .str.lower()  # Convert to lowercase to also catch 'NaN', 'nan', etc
-            #        .str.replace('nan', '')  # Remove any remaining 'nan' strings
-            #        .str.contains('[a-zA-Z]')
-            #        .any())
-            string_ratio = (df[feature]
-                .dropna()  # Remove NaN values
+            # Check if the column contains string values (excluding NaN/null)
+            non_null_values = df[feature].dropna()
+            
+            # Convert to string and check for alphabetic characters
+            contains_strings = (non_null_values
                 .astype(str)
-                .str.lower()  # Convert to lowercase
-                .str.replace('nan', '')  # Remove any remaining 'nan' strings
-                .str.contains('[a-zA-Z]')  # Check for alphabetic characters
-                .mean())
-            contains_strings = string_ratio > 0.5 
+                .str.lower()
+                .str.replace(r'[-+]?\d*\.?\d+', '', regex=True)  # Remove numeric patterns
+                .str.replace(r'\s+', '', regex=True)  # Remove whitespace
+                .str.replace('nan', '', regex=True)   # Remove nan strings
+                .str.replace('null', '', regex=True)  # Remove null strings
+                .str.contains('[a-zA-Z]')
+                .any())
+            
             # Count unique values excluding NaN
             n_unique = df[feature].nunique()
             
-            is_categorical = (
-                df[feature].dtype == 'object' or  # Object type
-                df[feature].dtype == 'bool' or    # Boolean type
-                contains_strings or               # Contains any strings
-                (n_unique <= max_unique and       # Few unique values
-                 df[feature].count() > min_count)
-            )
-            
-            if is_categorical:
+            if contains_strings:
+                # If the column contains any non-numeric strings, it's categorical
                 categorical_features.append(feature)
             else:
                 try:
-                    # Try converting to float to verify it's truly numeric
-                    df[feature].astype(float)
-                    numeric_features.append(feature)
+                    # Try converting non-null values to float
+                    non_null_values.astype(float)
+                    
+                    # If successful and meets categorical criteria, mark as categorical
+                    if n_unique <= max_unique and df[feature].count() >= min_count:
+                        categorical_features.append(feature)
+                    else:
+                        numeric_features.append(feature)
                 except (ValueError, TypeError):
                     # If conversion fails, treat as categorical
                     categorical_features.append(feature)

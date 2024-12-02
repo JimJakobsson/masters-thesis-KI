@@ -27,6 +27,7 @@ class ClassificationMetrics:
 
 class Metrics:
     def calculate_classification_metrics(
+        self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
         y_prob: np.ndarray,
@@ -92,7 +93,7 @@ class Metrics:
         except Exception as e:
             raise ValueError(f"Error calculating metrics: {str(e)}")
 
-    def format_metrics_for_display(metrics: Dict[str, Any]) -> str:
+    def format_metrics_for_display(self, metrics: Dict[str, Any]) -> str:
         """
         Format metrics dictionary into a readable string.
         

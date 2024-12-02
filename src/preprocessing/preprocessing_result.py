@@ -8,3 +8,5 @@ class PreprocessingResult:
     X: pd.DataFrame
     preprocessor: ColumnTransformer
     feature_names: List[str]
+    numeric_features: List[str]
+    categorical_features: List[str]

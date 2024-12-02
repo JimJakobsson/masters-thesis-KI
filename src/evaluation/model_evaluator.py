@@ -6,6 +6,7 @@ import shap
 from sklearn.base import BaseEstimator
 from config.model_config import ModelConfig
 from config.path_config import PathConfig
+from preprocessing.preprocessing_result import PreprocessingResult
 from .base_evaluator import BaseEvaluator
 from .report_classification import ReportClassification
 from visualisation.model_visualiser import ModelVisualiser
@@ -14,6 +15,8 @@ from visualisation.shap_plots import ShapPlotter
 from visualisation.learning_curve import LearningCurvePlotter
 from preprocessing.pipeline_creator import PipelineCreator
 from .metrics import Metrics
+from preprocessing.preprocessing_result import PreprocessingResult  # Import the class
+
 # from ..utils.validation import validate_shap_calculation
 
 class ModelEvaluator(BaseEvaluator):
@@ -44,49 +47,103 @@ class ModelEvaluator(BaseEvaluator):
         y_pred = (y_prob > threshold).astype(int)
         y_test = y_test.astype(int)
         
-        report = report.print_classification_report(y_test, y_pred)
-        metrics = metrics.calculate_classification_metrics(y_test, y_pred, y_prob)
+        #Prints a classification report
+        report = self.report.print_classification_report(y_test, y_pred)
+        metrics_result = self.metrics.calculate_classification_metrics(y_test, y_pred, y_prob)
         
         self.results.update({
             'best_params': grid_search.best_params_,
             'best_cv_score': grid_search.best_score_,
-            **metrics
+            **metrics_result
         })
         
         #print metrics using format_metrics_for_display
-        print(self.metrics.format_metrics_for_display(metrics))
+        print(self.metrics.format_metrics_for_display(metrics_result))
         return self.results
     
+    def get_feature_names_after_preprocessing(self, model):
+        """Get feature names after preprocessing has been applied"""
+        feature_names = []
+        processor = model.named_steps['preprocessor']
+
+        for name, transformer, columns in processor.transformers_:
+            if name == 'num':
+                feature_names.extend(columns)
+            elif name == 'cat':
+                encoder = processor.named_transformers_['cat'].named_steps['onehot']
+                cat_features = encoder.get_feature_names_out(columns)
+                feature_names.extend(cat_features)
+            elif name == 'remainder' :
+                continue
+            else:
+                raise ValueError(f'Invalid transformer name: {name}')
+        return feature_names
+    
     def calculate_feature_importance(self, best_model: BaseEstimator, 
-                                  X_test: pd.DataFrame, 
-                                  preprocessor: Any) -> Tuple[Dict, List[str]]:
-        """Calculate feature importance using SHAP values"""
-        X_test_transformed = best_model.named_steps['preprocessor'].transform(X_test)
+                               X_test: pd.DataFrame) -> Tuple[Dict, List[str]]:
+        """
+        Calculate feature importance using SHAP values, properly handling feature extraction
+        from the ColumnTransformer.
+        
+        Args:
+            best_model: The trained model pipeline
+            X_test: Test features
+            
+        Returns:
+            Tuple containing:
+            - Dictionary with aggregated SHAP values
+            - List of feature names
+            
+        The method handles the extraction of numeric and categorical features from the
+        ColumnTransformer's configuration, then uses these to properly aggregate SHAP
+        values for categorical features that were one-hot encoded.
+        """
+        # Get the column transformer from the pipeline
+        column_transformer = best_model.named_steps['preprocessor']
+        
+        # Transform the test data using the pipeline's preprocessor
+        X_test_transformed = column_transformer.transform(X_test)
+        
+        # Create SHAP explainer and calculate values
         self.explainer = self._create_explainer(best_model, X_test_transformed)
-        
         self.shap_values = self.explainer.shap_values(X_test_transformed)
-        feature_names = PipelineCreator.get_feature_names(best_model, preprocessor)
         
-        # Aggregate SHAP values
+        # Get feature names after preprocessing
+        feature_names = self.get_feature_names_after_preprocessing(best_model)
+        
+        # Extract numeric and categorical features from transformer configuration
+        numeric_features = []
+        categorical_features = []
+        
+        # Iterate through transformers to get feature lists
+        for name, _, columns in column_transformer.transformers_:
+            if name == 'num':
+                numeric_features = columns
+            elif name == 'cat':
+                categorical_features = columns
+        
+        # Calculate aggregated SHAP values
         self.aggregated_shap, self.feature_importance = self._aggregate_shap_values(
-            self.shap_values, 
-            feature_names, 
-            preprocessor
+            self.shap_values,
+            feature_names,
+            numeric_features,
+            categorical_features
         )
         
         return self.aggregated_shap, feature_names
     
     def _aggregate_shap_values(self, 
                              shap_values: np.ndarray,
-                             feature_names: List[str],
-                             preprocessor: Any) -> Tuple[Dict[str, np.ndarray], pd.DataFrame]:
+                             processed_feature_names: List[str],
+                             numeric_features: List[str],
+                             categorical_features: List[str]) -> Tuple[Dict[str, np.ndarray], pd.DataFrame]:
         """
         Aggregate SHAP values for categorical features that were one-hot encoded.
         
         Args:
             shap_values: SHAP values from explainer
             feature_names: Names of features after preprocessing
-            preprocessor: Original preprocessor containing feature information
+            preprocessing_result: PreprocessingResult containing feature information
             
         Returns:
             Tuple containing:
@@ -98,8 +155,8 @@ class ModelEvaluator(BaseEvaluator):
             shap_values = shap_values[:, :, 1]
         
         # Get original feature names (before one-hot encoding)
-        original_features = preprocessor.numeric_features + preprocessor.categorical_features
-        feature_names = np.array(feature_names)
+        original_features = (numeric_features + categorical_features)
+        processed_feature_names = np.array(processed_feature_names)
         
         # Initialize dictionary for aggregated SHAP values
         aggregated_shap = {}
@@ -107,14 +164,14 @@ class ModelEvaluator(BaseEvaluator):
         
         # Process each original feature
         for feature in original_features:
-            if feature in preprocessor.numeric_features:
+            if feature in numeric_features:
                 # For numeric features, just copy the SHAP values directly
-                if current_idx < len(feature_names):
+                if current_idx < len(processed_feature_names):
                     aggregated_shap[feature] = shap_values[:, current_idx]
                     current_idx += 1
             else:
                 # For categorical features, find all related one-hot encoded columns
-                feature_mask = np.array([col.startswith(f"{feature}_") for col in feature_names])
+                feature_mask = np.array([col.startswith(f"{feature}_") for col in processed_feature_names])
                 
                 if np.any(feature_mask):
                     # Sum SHAP values across all one-hot encoded columns

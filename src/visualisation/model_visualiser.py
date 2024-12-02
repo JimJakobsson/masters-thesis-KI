@@ -17,12 +17,14 @@ class ModelVisualiser:
     
     def create_all_plots(self, 
                         model: Any,
+                        X_train: pd.DataFrame,
                         X_test: pd.DataFrame,
-                        X: pd.DataFrame,
-                        y: pd.Series,
+                        y_train: pd.Series,
+                        y_test: pd.Series,
                         feature_importance: pd.DataFrame,
                         aggregated_shap: Dict,
                         explainer: Any,
+                        class_to_explain: int = 1,
                         output_suffix: str = '') -> None:
         """Create all visualization plots"""
         # Feature importance plot
@@ -49,7 +51,9 @@ class ModelVisualiser:
         # Learning curve plot
         self.learning_plotter.plot(
             model,
-            X,
-            y,
+            X_train,
+            X_test,
+            y_train,
+            y_test,
             output_suffix=output_suffix
         )

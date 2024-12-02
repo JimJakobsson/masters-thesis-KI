@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 from sklearn.base import BaseEstimator
+from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import GridSearchCV
 
 import DatabaseReader
@@ -11,6 +12,7 @@ from evaluation.model_evaluator import ModelEvaluator
 from experiment.datahandler import DataHandler
 from experiment.experiment_config import AgeGroup, ExperimentConfig
 from experiment.model_trainer import ModelTrainer
+from preprocessing import preprocessing_result
 from preprocessing.data_preprocessor import DataPreprocessor
 from preprocessing.preprocessing_result import PreprocessingResult
 
@@ -37,71 +39,54 @@ class Experiment:
         self.param_grid = param_grid
         self.db_reader = db_reader
     
-    def evaluate_age_group(self,
-                      data: pd.DataFrame,
-                      age_group: AgeGroup,
-                      grid_search: GridSearchCV,
-                      prep_result: PreprocessingResult) -> None:
+    def _evaluate_age_group(self,
+                       data: pd.DataFrame,
+                       age_group: AgeGroup,
+                       grid_search: GridSearchCV,
+                       preprocessor: ColumnTransformer,
+                       suffix: str) -> None:
         """
-        Evaluate model performance for specific age group.
-        
-        Args:
-            data: Raw input data
-            age_group: Age group configuration
-            grid_search: Fitted grid search object
-            prep_result: Original preprocessing result containing fitted preprocessor
+        Evaluates model performance for a specific age group with proper preprocessing
+        and evaluation flow.
         """
         try:
-            # Filter age group data
+            # Filter and prepare age group data
             age_data = self.data_handler.filter_age_group(data, age_group)
-            
-            # Create labels
             labeled_age_data = self.preprocessor.create_labels(age_data)
-            
-            # Get features and target using the same preprocessing steps
             X_group, y_group = self.preprocessor.get_features_and_target(labeled_age_data)
             
             # Split the age group data
             X_train_group, X_test_group, y_train_group, y_test_group = self.trainer.split_data(
                 X_group, y_group
             )
-            
-            # Process training and test data using the original fitted preprocessor
-            train_result = self.preprocessor.process(
-                X_train_group,
-                fit=False  # Use already fitted preprocessor
-            )
-            
-            test_result = self.preprocessor.process(
-                X_test_group,
-                fit=False
-            )
-            
-            # Fit grid search on age group data
-            grid_search.fit(train_result.X, y_train_group)
-            
-            # Evaluate and plot results
-            output_suffix = f"_{age_group.name}"
-            self.evaluator.evaluate_model(
-                grid_search,
-                test_result.X,
-                y_test_group
-            )
-            
-            #calculate feature importance
-            self.evaluator.calculate_feature_importance(
-                grid_search.best_estimator_,
-                test_result.X,
-                prep_result.preprocessor
-            )
+            preprocessor = self.preprocessor.create_preprocessor(X_train_group)
+            preprocessor.fit(X_train_group)
+            # Create a new pipeline with the original preprocessor
+            age_pipeline = self.trainer.create_pipeline(preprocessor, self.model)
+            age_grid_search = self.trainer.train_model(age_pipeline, self.param_grid, X_train_group, y_train_group)
 
-            #plot all
+            
+            # Evaluate using the same pattern as the main evaluation
+            self.evaluator.evaluate_model(
+                grid_search=age_grid_search,
+                X_test=X_test_group,
+                y_test=y_test_group
+            )
+            
+            self.evaluator.calculate_feature_importance(
+                best_model=age_grid_search.best_estimator_,
+                X_test=X_test_group,
+                
+            )
+            
             self.evaluator.plot_all(
-                grid_search,
-                test_result.X,
-                y_test_group,
-                prep_result.preprocessor,
-                output_suffix
+                model=age_grid_search.best_estimator_,
+                X_train=X_train_group,
+                X_test=X_test_group,
+                y_train=y_train_group,
+                y_test=y_test_group,
+                class_to_explain=1,
+                output_suffix=suffix
             )
             
             print(f"\nCompleted evaluation for age group: {age_group.name}")
@@ -111,6 +96,9 @@ class Experiment:
             raise
     
     def run(self) -> None:
+        """
+            Runs the complete experiment pipeline with proper preprocessing handling.
+        """
         # Load and process data
         raw_data = self.db_reader.read_ipt1_data()
         raw_data = self.data_handler.calculate_ages(raw_data)
@@ -120,21 +108,47 @@ class Experiment:
 
         #Split before preprocessing
         X_train, X_test, y_train, y_test = self.trainer.split_data(X, y)
+        #Create the preprocessor using training data
+        preprocessor = self.preprocessor.create_preprocessor(X_train)
+        preprocessor.fit(X_train)
 
-        #Process training data. Fit and transform
-        train_result = self.preprocessor.process(X_train, fit=True)
+        #Create and train the complete pipeline
+        pipeline = self.trainer.create_pipeline(preprocessor, self.model)
+        grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
+
+        # #Process training data. Fit and transform
+        # train_result = self.preprocessor.process(X_train, fit=True)
 
         #Process test data. Only transform
-        test_result = self.preprocessor.process(X_test, fit=False)
+        # test_result = self.preprocessor.process(X_test, fit=False)
 
-        pipeline = self.trainer.create_pipeline(train_result.preprocessor, self.model)
-        grid_search = self.trainer.train_model(pipeline, self.param_grid, train_result.X, y_train)
+        # pipeline = self.trainer.create_pipeline(train_result.preprocessor, self.model)
+        # grid_search = self.trainer.train_model(pipeline, self.param_grid, train_result.X, y_train)
 
+        #Evaluate the model
+
+        self.evaluator.evaluate_model(
+            grid_search, X_test, y_test, threshold=0.4)
+        
+        aggregated_shap, feature_names = self.evaluator.calculate_feature_importance(
+            best_model=grid_search.best_estimator_,
+            X_test=X_test,
+            )
+        
+        self.evaluator.plot_all(
+        model=grid_search.best_estimator_,
+        X_train=X_train,  # Pass raw training data for learning curves
+        X_test=X_test,    # Pass raw test data for SHAP analysis
+        y_train=y_train,
+        y_test=y_test,
+        class_to_explain=1,  # Typically 1 for binary classification
+        output_suffix=''     # Empty for base model
+    )
         #Evaluate base model
-        self.evaluator.evaluate_model(grid_search, test_result.X, y_test)
-        self.evaluator.calculate_feature_importance(
-            grid_search.best_estimator_, test_result.X, train_result.preprocessor)
-        self.evaluator.plot_all(grid_search, test_result.X, y_test, train_result.preprocessor)
+        # self.evaluator.evaluate_model(grid_search, test_result.X, y_test)
+        # self.evaluator.calculate_feature_importance(
+        #     grid_search.best_estimator_, test_result.X, train_result.preprocessor)
+        # self.evaluator.plot_all(grid_search, test_result.X, y_test, train_result.preprocessor)
 
         age_groups = [
             AgeGroup('50-59', 50, 59),
@@ -143,9 +157,10 @@ class Experiment:
         ]
 
         for age_group in age_groups:
-            self.evaluate_age_group(
+            self._evaluate_age_group(
                 data=raw_data,
                 age_group=age_group,
                 grid_search=grid_search,
-                prep_result=train_result
+                preprocessor=preprocessor,
+                suffix=f"_{age_group.name}"
             )
