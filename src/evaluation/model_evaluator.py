@@ -198,10 +198,10 @@ class ModelEvaluator(BaseEvaluator):
         })
         
         # Sort by absolute importance
-        feature_importance_abs_mean = self.feature_importance_dataframe.sort_values(
-            'importance_abs_mean', 
-            ascending=False
-        ).reset_index(drop=True)
+        #feature_importance = feature_importance.sort_values('importance_abs_mean', ascending=False).head(num_features)
+
+        feature_importance_abs_mean = feature_importance_dataframe.sort_values(
+            'importance_abs_mean', ascending=False)
         
         
         return aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean 
