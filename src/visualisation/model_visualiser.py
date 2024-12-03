@@ -21,7 +21,8 @@ class ModelVisualiser:
                         X_test: pd.DataFrame,
                         y_train: pd.Series,
                         y_test: pd.Series,
-                        feature_importance: pd.DataFrame,
+                        feature_importance_dataframe: pd.DataFrame,
+                        feature_importance_abs_mean: pd.DataFrame,
                         aggregated_shap: Dict,
                         explainer: Any,
                         class_to_explain: int = 1,
@@ -29,7 +30,7 @@ class ModelVisualiser:
         """Create all visualization plots"""
         # Feature importance plot
         self.feature_plotter.plot(
-            feature_importance,
+            feature_importance_abs_mean,
             output_suffix=output_suffix
         )
         
@@ -42,8 +43,9 @@ class ModelVisualiser:
         self.shap_plotter.plot_waterfall(
             model,
             X_test,
-            class_to_explain=1,
+            class_to_explain=class_to_explain,
             explainer=explainer,
+            feature_importance_abs_mean=feature_importance_abs_mean,
             aggregated_shap=aggregated_shap,
             output_suffix=output_suffix
         )

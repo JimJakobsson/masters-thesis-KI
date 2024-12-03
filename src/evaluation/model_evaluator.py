@@ -26,7 +26,7 @@ class ModelEvaluator(BaseEvaluator):
         self.results: Dict = {}
         self.output_dir = Path(output_dir) if output_dir else PathConfig.OUTPUT_DIR
         self.shap_values: Optional[np.ndarray] = None
-        self.feature_importance: Optional[pd.DataFrame] = None
+        self.feature_importance_dataframe: Optional[pd.DataFrame] = None
         self.explainer: Optional[Any] = None
         self.aggregated_shap: Optional[Dict] = None
         
@@ -74,9 +74,16 @@ class ModelEvaluator(BaseEvaluator):
                 cat_features = encoder.get_feature_names_out(columns)
                 feature_names.extend(cat_features)
             elif name == 'remainder' :
-                continue
+                if isinstance(columns, slice):
+                    remainder_indices = range(columns.start or 0, columns.stop, columns.step or 1)
+                else:
+                    remainder_indices = columns
+                print(f"Remainder columns (to be dropped): {remainder_indices}")
             else:
                 raise ValueError(f'Invalid transformer name: {name}')
+            
+        print(f"Total features after preprocessing: {len(feature_names)}")
+
         return feature_names
     
     def calculate_feature_importance(self, best_model: BaseEstimator, 
@@ -100,17 +107,19 @@ class ModelEvaluator(BaseEvaluator):
         """
         # Get the column transformer from the pipeline
         column_transformer = best_model.named_steps['preprocessor']
-        
         # Transform the test data using the pipeline's preprocessor
+        print("Shape before transform:", X_test.shape)
         X_test_transformed = column_transformer.transform(X_test)
-        
-        # Create SHAP explainer and calculate values
+        print("Shape after transform:", X_test_transformed.shape)
+
+        #Create explainer using just the classifier
         self.explainer = self._create_explainer(best_model, X_test_transformed)
         self.shap_values = self.explainer.shap_values(X_test_transformed)
         
         # Get feature names after preprocessing
-        feature_names = self.get_feature_names_after_preprocessing(best_model)
-        
+        preprocessed_feature_names = self.get_feature_names_after_preprocessing(best_model)
+        print("SHAP values shape:", self.shap_values.shape)
+        print("Feature names:", len(preprocessed_feature_names))
         # Extract numeric and categorical features from transformer configuration
         numeric_features = []
         categorical_features = []
@@ -123,14 +132,14 @@ class ModelEvaluator(BaseEvaluator):
                 categorical_features = columns
         
         # Calculate aggregated SHAP values
-        self.aggregated_shap, self.feature_importance = self._aggregate_shap_values(
+        self.aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self._aggregate_shap_values(
             self.shap_values,
-            feature_names,
+            preprocessed_feature_names,
             numeric_features,
             categorical_features
         )
         
-        return self.aggregated_shap, feature_names
+        return self.aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean
     
     def _aggregate_shap_values(self, 
                              shap_values: np.ndarray,
@@ -181,21 +190,21 @@ class ModelEvaluator(BaseEvaluator):
                     current_idx += np.sum(feature_mask)
         
         # Create feature importance DataFrame
-        self.feature_importance = pd.DataFrame({
+        feature_importance_dataframe = pd.DataFrame({
             'feature': list(aggregated_shap.keys()),
             'importance_abs_mean': [np.mean(np.abs(values)) for values in aggregated_shap.values()],
             'importance_mean': [np.mean(values) for values in aggregated_shap.values()],
-            'importance_std': [np.std(values) for values in aggregated_shap.values()]
+            'importance_std': [np.std(values) for values in aggregated_shap.values()] 
         })
         
         # Sort by absolute importance
-        feature_importance_abs_mean = self.feature_importance.sort_values(
+        feature_importance_abs_mean = self.feature_importance_dataframe.sort_values(
             'importance_abs_mean', 
             ascending=False
         ).reset_index(drop=True)
         
         
-        return aggregated_shap, feature_importance_abs_mean, 
+        return aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean 
      
     def _create_explainer(self, model: BaseEstimator, 
                          data: Optional[np.ndarray] = None) -> Any:
@@ -205,12 +214,14 @@ class ModelEvaluator(BaseEvaluator):
 
         try:
             if model_name in ModelConfig.TREE_BASED_MODELS:
+                print("Tree explainer created")
                 return shap.TreeExplainer(classifier)
             elif model_name in ModelConfig.DEEP_LEARNING_MODELS:
                 if data is None:
                     raise ValueError("Background data required for DeepExplainer")
                 return shap.DeepExplainer(model, data)
             elif model_name in ModelConfig.LINEAR_MODELS:
+                print("Linear explainer created")
                 return shap.LinearExplainer(model, data)
             else:
                 raise ValueError(f"Unsupported model type: {model_name}")
@@ -220,6 +231,9 @@ class ModelEvaluator(BaseEvaluator):
     def plot_all(self, model: BaseEstimator, 
                  X_train: pd.DataFrame, X_test: pd.DataFrame,
                  y_train: pd.Series, y_test: pd.Series,
+                 feature_importance_dataframe: pd.DataFrame,
+                 feature_importance_abs_mean: pd.DataFrame,
+                 aggregated_shap: Dict,
                  class_to_explain: int = 1,
                  output_suffix: str = '') -> None:
         """
@@ -234,7 +248,7 @@ class ModelEvaluator(BaseEvaluator):
             class_to_explain: Class to explain in SHAP waterfall plot
             output_suffix: Suffix for output files
         """
-        if not all([self.feature_importance is not None,
+        if not all([self.feature_importance_dataframe is not None,
                    self.aggregated_shap is not None,
                    self.explainer is not None]):
             raise ValueError("Must run calculate_feature_importance before plotting")
@@ -245,8 +259,9 @@ class ModelEvaluator(BaseEvaluator):
             X_test=X_test,
             y_train=y_train,
             y_test=y_test,
-            feature_importance=self.feature_importance,
-            aggregated_shap=self.aggregated_shap,
+            feature_importance_dataframe=feature_importance_dataframe,
+            feature_importance_abs_mean=feature_importance_abs_mean,
+            aggregated_shap=aggregated_shap,
             explainer=self.explainer,
             class_to_explain=class_to_explain,
             output_suffix=output_suffix

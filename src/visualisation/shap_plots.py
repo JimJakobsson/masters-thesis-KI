@@ -28,7 +28,8 @@ class ShapPlotter(BasePlotter):
             feature_names=list(aggregated_shap.keys()),
             plot_type="dot",
             max_display=20,
-            show=False
+            show=False,
+            
         )
         
         # Save plot
@@ -37,6 +38,7 @@ class ShapPlotter(BasePlotter):
     def plot_waterfall(self, model, X_test: pd.DataFrame, 
                       class_to_explain: int,
                       explainer: Any,
+                      feature_importance_abs_mean: pd.DataFrame,
                       aggregated_shap: dict,
                       output_suffix: str = '') -> None:
         plt.figure(figsize=self.config.FIGURE_SIZES['waterfall'])
@@ -46,7 +48,7 @@ class ShapPlotter(BasePlotter):
                          if class_to_explain == 1 
                          else np.argmax(probas[:, 0]))
         
-        features = list(aggregated_shap.keys())
+        features = list(feature_importance_abs_mean['feature'])  # Use your predefined order
         values = np.array([aggregated_shap[feature][observation_idx] for feature in features])
         data = X_test.iloc[observation_idx][features].values
         

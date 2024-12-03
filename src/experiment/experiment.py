@@ -73,7 +73,7 @@ class Experiment:
                 y_test=y_test_group
             )
             
-            self.evaluator.calculate_feature_importance(
+            aggregated_shap, processed_feature_names = self.evaluator.calculate_feature_importance(
                 best_model=age_grid_search.best_estimator_,
                 X_test=X_test_group,
                 
@@ -130,7 +130,7 @@ class Experiment:
         self.evaluator.evaluate_model(
             grid_search, X_test, y_test, threshold=0.4)
         
-        aggregated_shap, feature_names = self.evaluator.calculate_feature_importance(
+        aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self.evaluator.calculate_feature_importance(
             best_model=grid_search.best_estimator_,
             X_test=X_test,
             )
@@ -141,6 +141,9 @@ class Experiment:
         X_test=X_test,    # Pass raw test data for SHAP analysis
         y_train=y_train,
         y_test=y_test,
+        feature_importance_dataframe=feature_importance_dataframe,
+        feature_importance_abs_mean=feature_importance_abs_mean,
+        aggregated_shap=aggregated_shap,
         class_to_explain=1,  # Typically 1 for binary classification
         output_suffix=''     # Empty for base model
     )
@@ -156,11 +159,11 @@ class Experiment:
             AgeGroup('70-79', 70, 79),
         ]
 
-        for age_group in age_groups:
-            self._evaluate_age_group(
-                data=raw_data,
-                age_group=age_group,
-                grid_search=grid_search,
-                preprocessor=preprocessor,
-                suffix=f"_{age_group.name}"
-            )
+        # for age_group in age_groups:
+        #     self._evaluate_age_group(
+        #         data=raw_data,
+        #         age_group=age_group,
+        #         grid_search=grid_search,
+        #         preprocessor=preprocessor,
+        #         suffix=f"_{age_group.name}"
+        #     )

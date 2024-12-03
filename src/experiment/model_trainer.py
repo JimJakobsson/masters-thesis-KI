@@ -33,8 +33,7 @@ class ModelTrainer:
         )
         print("y shape", y.shape)
         print("x shape", X.shape)
-        #print all features after encoding
-        print("features", X.columns)
+        
         grid_search.fit(X, y)
         return grid_search
     
