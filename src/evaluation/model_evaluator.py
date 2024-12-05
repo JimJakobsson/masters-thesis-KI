@@ -202,7 +202,7 @@ class ModelEvaluator(BaseEvaluator):
 
         feature_importance_abs_mean = feature_importance_dataframe.sort_values(
             'importance_abs_mean', ascending=False)
-        
+        print("features importance abs mean", feature_importance_abs_mean.head(10))
         
         return aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean 
      
@@ -248,8 +248,8 @@ class ModelEvaluator(BaseEvaluator):
             class_to_explain: Class to explain in SHAP waterfall plot
             output_suffix: Suffix for output files
         """
-        if not all([self.feature_importance_dataframe is not None,
-                   self.aggregated_shap is not None,
+        if not all([feature_importance_dataframe is not None,
+                   aggregated_shap is not None,
                    self.explainer is not None]):
             raise ValueError("Must run calculate_feature_importance before plotting")
 
