@@ -226,9 +226,10 @@ class Evaluator:
         # Get feature names after preprocessing
         feature_names = self.get_feature_names_after_preprocessing(best_model)
 
+
         print(f"SHAP values shape: {np.shape(self.shap_values)}")
         print("Number of feature names:", len(feature_names))
-        print("First few feature names:", feature_names[:5])
+        print("First few feature names:", feature_names[:10])
 
         # Aggregate SHAP values for one-hot encoded features.
         # Return feature importance and processed feature names

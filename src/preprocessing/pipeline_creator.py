@@ -18,6 +18,10 @@ class PipelineCreator:
         Returns:
             ColumnTransformer: Preprocessing pipeline
         """
+        print("\nCreating ColumnTransformer:")
+        print(f"Numeric features ({len(self.numeric_features)}):", self.numeric_features[:5], "...")
+        print(f"Categorical features ({len(self.categorical_features)}):", self.categorical_features[:5], "...")
+        
         return ColumnTransformer(
             transformers=[
                 ('num', self._create_numeric_pipeline(), self.numeric_features),
@@ -40,7 +44,10 @@ class PipelineCreator:
     def _create_categorical_pipeline() -> Pipeline:
         """Create a pipeline for categorical features"""
         return Pipeline(steps=[
-            ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+            ('onehot', OneHotEncoder(handle_unknown='ignore', 
+                                     sparse_output=False, 
+                                     
+                                     ))	
         ])
     
     @staticmethod
@@ -67,39 +74,39 @@ class PipelineCreator:
     #     ).tolist()
 
     #     return numeric_features + categorical_features
-    @staticmethod
-    def get_feature_names(column_transformer: ColumnTransformer, input_features: Optional[List[str]] = None) -> List[str]:
-        """Get feature names after preprocessing
+    # @staticmethod
+    # def get_feature_names(column_transformer: ColumnTransformer, input_features: Optional[List[str]] = None) -> List[str]:
+    #     """Get feature names after preprocessing
         
-        Args:
-            column_transformer: Fitted ColumnTransformer
-            input_features: Optional list of input feature names
+    #     Args:
+    #         column_transformer: Fitted ColumnTransformer
+    #         input_features: Optional list of input feature names
             
-        Returns:
-            List of feature names after transformation
-        """
-        if not hasattr(column_transformer, 'transformers_'):
-            raise ValueError("ColumnTransformer is not fitted yet. Please fit the transformer before getting feature names.")
+    #     Returns:
+    #         List of feature names after transformation
+    #     """
+    #     if not hasattr(column_transformer, 'transformers_'):
+    #         raise ValueError("ColumnTransformer is not fitted yet. Please fit the transformer before getting feature names.")
         
-        # Get the numeric transformer and its features
-        numeric_transformer = column_transformer.named_transformers_['num']
-        numeric_features = column_transformer.feature_names_in_[
-            column_transformer.transformers_[0][2]  # Index for numeric features
-        ].tolist()
+    #     # Get the numeric transformer and its features
+    #     numeric_transformer = column_transformer.named_transformers_['num']
+    #     numeric_features = column_transformer.feature_names_in_[
+    #         column_transformer.transformers_[0][2]  # Index for numeric features
+    #     ].tolist()
         
-        # Get the categorical transformer and its features
-        categorical_transformer = column_transformer.named_transformers_['cat']
-        categorical_features = column_transformer.feature_names_in_[
-            column_transformer.transformers_[1][2]  # Index for categorical features
-        ].tolist()
+    #     # Get the categorical transformer and its features
+    #     categorical_transformer = column_transformer.named_transformers_['cat']
+    #     categorical_features = column_transformer.feature_names_in_[
+    #         column_transformer.transformers_[1][2]  # Index for categorical features
+    #     ].tolist()
         
-        # Get transformed feature names
-        numeric_names = numeric_transformer.get_feature_names_out(numeric_features).tolist()
-        categorical_names = categorical_transformer.named_steps['onehot'].get_feature_names_out(
-            categorical_features
-        ).tolist()
+    #     # Get transformed feature names
+    #     numeric_names = numeric_transformer.get_feature_names_out(numeric_features).tolist()
+    #     categorical_names = categorical_transformer.named_steps['onehot'].get_feature_names_out(
+    #         categorical_features
+    #     ).tolist()
         
-        return numeric_names + categorical_names
+    #     return numeric_names + categorical_names
     
     def check_data_consistency(self, X_train, X_test):
         """Check for consistency between training and test data"""

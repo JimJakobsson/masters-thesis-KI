@@ -73,17 +73,24 @@ class ModelEvaluator(BaseEvaluator):
                 encoder = processor.named_transformers_['cat'].named_steps['onehot']
                 cat_features = encoder.get_feature_names_out(columns)
                 feature_names.extend(cat_features)
-            elif name == 'remainder' :
-                if isinstance(columns, slice):
-                    remainder_indices = range(columns.start or 0, columns.stop, columns.step or 1)
+            elif name == 'remainder':
+                # Handle remainder columns based on drop_remainder parameter
+                if transformer == 'drop':
+                    print(f"Remainder columns being dropped: {columns}")
                 else:
-                    remainder_indices = columns
-                print(f"Remainder columns (to be dropped): {remainder_indices}")
+                    # If remainder columns are passed through, add them to feature names
+                    if isinstance(columns, slice):
+                        remainder_cols = range(columns.start or 0, columns.stop, columns.step or 1)
+                        feature_names.extend([f"feature_{i}" for i in remainder_cols])
+                    else:
+                        feature_names.extend(columns)
             else:
                 raise ValueError(f'Invalid transformer name: {name}')
             
         print(f"Total features after preprocessing: {len(feature_names)}")
-
+        #print 20 features
+        print(f"First 1000 features: {feature_names[:1000]}")
+        
         return feature_names
     
     def calculate_feature_importance(self, best_model: BaseEstimator, 
@@ -169,24 +176,32 @@ class ModelEvaluator(BaseEvaluator):
         
         # Initialize dictionary for aggregated SHAP values
         aggregated_shap = {}
+        processed_indices = set()
+
         current_idx = 0
         
         # Process each original feature
         for feature in original_features:
             if feature in numeric_features:
-                # For numeric features, just copy the SHAP values directly
-                if current_idx < len(processed_feature_names):
+                if current_idx not in processed_indices:
+                    # # For numeric features, just copy the SHAP values directly
+                    # if current_idx < len(processed_feature_names):
+                    #     aggregated_shap[feature] = shap_values[:, current_idx]
+                    #     current_idx += 1
                     aggregated_shap[feature] = shap_values[:, current_idx]
+                    processed_indices.add(current_idx)
                     current_idx += 1
             else:
                 # For categorical features, find all related one-hot encoded columns
                 feature_mask = np.array([col.startswith(f"{feature}_") for col in processed_feature_names])
-                
                 if np.any(feature_mask):
+                    indices = np.where(feature_mask)[0]
+                    if not any(idx in processed_indices for idx in indices):
                     # Sum SHAP values across all one-hot encoded columns
                     # Don't take absolute values to preserve direction of impact
-                    aggregated_values = shap_values[:, feature_mask].sum(axis=1)
-                    aggregated_shap[feature] = aggregated_values
+                        aggregated_values = shap_values[:, feature_mask].sum(axis=1)
+                        aggregated_shap[feature] = aggregated_values
+                        processed_indices.update(indices)
                     current_idx += np.sum(feature_mask)
         
         # Create feature importance DataFrame

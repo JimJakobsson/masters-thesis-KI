@@ -74,20 +74,20 @@ class PreProcessing:
         """
         Detect categorical features in the dataset
         """
-        def contains_strings(series):
-            """
-            Check if a series contains any actual string values,
-            properly handling NULL/NaN values.
-            """
-            null_mask = (series.isna()) | (series.astype(str).str.upper() == 'NULL') | (series.astype(str).str == 'NaN')
-            #Filter out NULL/NaN values
-            non_null_series = series[~null_mask]
-            print("series", series)
-            #If all values are NULL/NaN, return False
-            if non_null_series.empty:
-                return False
+        # def contains_strings(series):
+        #     """
+        #     Check if a series contains any actual string values,
+        #     properly handling NULL/NaN values.
+        #     """
+        #     null_mask = (series.isna()) | (series.astype(str).str.upper() == 'NULL') | (series.astype(str).str == 'NaN')
+        #     #Filter out NULL/NaN values
+        #     non_null_series = series[~null_mask]
+        #     print("series", series)
+        #     #If all values are NULL/NaN, return False
+        #     if non_null_series.empty:
+        #         return False
             
-            return series.astype(str).str.contains('[a-zA-Z]').any()
+        #     return series.astype(str).str.contains('[a-zA-Z]').any()
         if self.categorical_features is None:
             categorical_features = []
 
@@ -103,9 +103,6 @@ class PreProcessing:
                     X[feature].dtype == 'bool' or
                     (X[feature].nunique() <= 10) and (X[feature].count() > 10)  #or
 
-                    #check to see if the column contains string values
-                    #come back to this later
-                    #contains_strings(X[feature])
                 )
 
                 if is_categorical:

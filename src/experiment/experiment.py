@@ -60,7 +60,9 @@ class Experiment:
                 X_group, y_group
             )
             preprocessor = self.preprocessor.create_preprocessor(X_train_group)
-            preprocessor.fit(X_train_group)
+            X_train_transformed = preprocessor.fit_transform(X_train_group)
+            print("\nAfter preprocessing:")
+            print(f"X_train_transformed shape: {X_train_transformed.shape}")
             # Create a new pipeline with the original preprocessor
             age_pipeline = self.trainer.create_pipeline(preprocessor, self.model)
             age_grid_search = self.trainer.train_model(age_pipeline, self.param_grid, X_train_group, y_train_group)
@@ -110,22 +112,11 @@ class Experiment:
         X_train, X_test, y_train, y_test = self.trainer.split_data(X, y)
         #Create the preprocessor using training data
         preprocessor = self.preprocessor.create_preprocessor(X_train)
-        preprocessor.fit(X_train)
+        
 
         #Create and train the complete pipeline
         pipeline = self.trainer.create_pipeline(preprocessor, self.model)
         grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
-
-        # #Process training data. Fit and transform
-        # train_result = self.preprocessor.process(X_train, fit=True)
-
-        #Process test data. Only transform
-        # test_result = self.preprocessor.process(X_test, fit=False)
-
-        # pipeline = self.trainer.create_pipeline(train_result.preprocessor, self.model)
-        # grid_search = self.trainer.train_model(pipeline, self.param_grid, train_result.X, y_train)
-
-        #Evaluate the model
 
         self.evaluator.evaluate_model(
             grid_search, X_test, y_test, threshold=0.4)
