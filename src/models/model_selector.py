@@ -11,6 +11,8 @@ class ModelSelector:
             'random_forest': ModelRegistry.get_random_forest_config,
             # 'gradient_boosting': ModelRegistry.get_gradient_boosting_config,
             # 'logistic_regression': ModelRegistry.get_logistic_regression_config,
+            # 'hist_gradient_boosting': ModelRegistry.get_hist_gradient_boosting_config,
+            # 'bagging': ModelRegistry.get_bagging_config,
             # 'svm': ModelRegistry.get_svm_config,
             # 'xgboost': ModelRegistry.get_xgboost_config,
             # 'catboost': ModelRegistry.get_catboost_config

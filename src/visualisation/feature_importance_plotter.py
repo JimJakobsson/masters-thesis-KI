@@ -15,10 +15,10 @@ class FeatureImportancePlotter(BasePlotter):
              output_suffix: str = '') -> None:
         """Plot feature importance"""
         # Sort and filter features
-        feature_importance = (feature_importance
-                            .sort_values('importance_abs_mean', ascending=False)
-                            .head(num_features))
-        
+        # feature_importance = (feature_importance
+        #                     .sort_values('importance_abs_mean', ascending=False)
+        #                     .head(num_features))
+        feature_importance = feature_importance.head(num_features)
         plt.figure(figsize=self.config.FIGURE_SIZES['feature'], 
                   dpi=self.config.DPI)
         
@@ -29,7 +29,9 @@ class FeatureImportancePlotter(BasePlotter):
             data=feature_importance,
             palette='rocket'
         )
-        
+        plt.barh(feature_importance['feature'], 
+                 feature_importance['importance_abs_mean'], 
+                 color='b')
         # Customize plot
         plt.xlabel('Mean |SHAP Value|', 
                   fontsize=self.config.FONT_SIZES['label'])

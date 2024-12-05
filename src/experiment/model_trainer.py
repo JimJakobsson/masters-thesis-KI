@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, Tuple
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
@@ -34,7 +35,11 @@ class ModelTrainer:
         print("y shape", y.shape)
         print("x shape", X.shape)
         
+        time_start = time.time()
         grid_search.fit(X, y)
+        time_end = time.time()
+        print(f"Grid search completed in {time_end - time_start:.2f} seconds")
+        print(f"Best parameters: {grid_search.best_params_}")
         return grid_search
     
     def split_data(self, X: pd.DataFrame, y: pd.Series) -> Tuple:

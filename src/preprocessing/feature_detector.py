@@ -83,7 +83,6 @@ class FeatureDetector:
                 
             )
             if is_categorical:
-                print(f"categoricalfeature: {feature}")
                 categorical_features.append(feature)
         numeric_features = [col for col in df.columns if col not in categorical_features]
         print("\nFeature Detection Results:")

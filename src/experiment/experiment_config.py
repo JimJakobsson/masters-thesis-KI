@@ -14,4 +14,4 @@ class ExperimentConfig:
     base_year: int = 1985
     test_size: float = 0.2
     random_state: int = 42
-    cv_folds: int = 3
+    cv_folds: int = 5

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 class ModelConfig:
     """Confiuguratoin for model types and their corresponding SHAP explainers"""
     TREE_BASED_MODELS = (
-        'RandomForestClassifier', 'GradientBoostingClassifier', 
+        'RandomForestClassifier', 'GradientBoostingClassifier', 'HistGradientBoostingClassifier',
         'DecisionTreeClassifier', 'XGBClassifier', 'XGBRegressor',
         'CatBoostClassifier', 'CatBoostRegressor', 'AdaBoostClassifier'
     )

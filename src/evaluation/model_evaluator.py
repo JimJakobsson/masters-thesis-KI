@@ -49,6 +49,8 @@ class ModelEvaluator(BaseEvaluator):
         
         #Prints a classification report
         report = self.report.print_classification_report(y_test, y_pred)
+        #include classification report in log file
+        self.results.update({'classification_report': report})
         metrics_result = self.metrics.calculate_classification_metrics(y_test, y_pred, y_prob)
         
         self.results.update({
@@ -88,8 +90,6 @@ class ModelEvaluator(BaseEvaluator):
                 raise ValueError(f'Invalid transformer name: {name}')
             
         print(f"Total features after preprocessing: {len(feature_names)}")
-        #print 20 features
-        print(f"First 1000 features: {feature_names[:1000]}")
         
         return feature_names
     
@@ -281,9 +281,3 @@ class ModelEvaluator(BaseEvaluator):
             class_to_explain=class_to_explain,
             output_suffix=output_suffix
         )
-
-        # self.feature_plotter.plot_feature_importance(self.feature_importance)
-        # self.shap_plotter.plot_shap_summary(self.aggregated_shap, X_test)
-        # self.shap_plotter.plot_waterfall(best_model, X_test, class_to_explain,
-        #                                self.explainer, self.aggregated_shap)
-        # self.learning_curve_plotter.plot(best_model, X, y)

@@ -51,10 +51,15 @@ class ShapPlotter(BasePlotter):
         features = list(feature_importance_abs_mean['feature'])  # Use your predefined order
         values = np.array([aggregated_shap[feature][observation_idx] for feature in features])
         data = X_test.iloc[observation_idx][features].values
-        
+        # Check if expected_value is a list or a single value
+        if isinstance(explainer.expected_value, (list, np.ndarray)):
+            base_value = float(explainer.expected_value[class_to_explain])
+        else:
+            base_value = float(explainer.expected_value)
+
         explanation = shap.Explanation(
             values=values,
-            base_values=float(explainer.expected_value[class_to_explain]),
+            base_values=base_value,
             data=data,
             feature_names=features
         )

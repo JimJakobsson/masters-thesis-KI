@@ -31,7 +31,7 @@ class DatabaseReader:
         finally:
             self.connection.dispose()
     
-    def read_joined_tables(self, main_table: str, joins: List[JoinConfig], cache_file: Optional[Path] = None, use_cache: bool = False) -> pd.DataFrame:
+    def read_joined_tables(self, main_table: str, joins: List[JoinConfig], cache_path: Optional[Path] = None, use_cache: bool = False) -> pd.DataFrame:
         """
         Read joined tables from database.
         
@@ -46,9 +46,9 @@ class DatabaseReader:
             DataFrame of joined table contents
         """
         # Check cache first if enabled
-        if use_cache and cache_file and cache_file.exists():
-            print(f"Reading from cache file: {cache_file}")
-            return pd.read_csv(cache_file)
+        if use_cache and cache_path:
+            print(f"Reading from cache file: {cache_path}")
+            return pd.read_csv(cache_path)
         try: 
             query = QueryBuilder.build_join_query(main_table, joins)
             print("Executing query:", query)
@@ -57,10 +57,10 @@ class DatabaseReader:
             df = pd.read_sql_query(query, engine)
             print(f"Query executed successfully. DataFrame shape: {df.shape}")
 
-            if cache_file:
-                cache_file.parent.mkdir(parents=True, exist_ok=True)
-                df.to_csv(cache_file, index=False)
-                print(f"Results cached to file: {cache_file}")
+            if cache_path:
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_csv(cache_path, index=False)
+                print(f"Results cached to file: {cache_path}")
             return df
         except Exception as e:
             raise Exception(f"Failed to read joined tables: {str(e)}")

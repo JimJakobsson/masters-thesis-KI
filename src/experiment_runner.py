@@ -86,33 +86,11 @@ class ExperimentRunner:
         
         # Run experiments
         logging.info("\nStarting experiments...")
-        suite.run_experiments()
-        logging.info("All experiments completed successfully")
-        # try:
-        #     # Setup database connection
-        #     db_reader = self.setup_database()
-            
-        #     # Create experiment configuration
-        #     experiment_config = self.create_experiment_config()
-            
-        #     # Initialize and run experiment suite
-        #     suite = ExperimentSuite(
-        #         db_reader=db_reader,
-        #         output_dir=self.output_dir,
-        #         models=selected_models,
-        #         config=experiment_config
-        #     )
-            
-        #     # Display available models
-        #     self.list_available_models()
-            
-        #     # Run experiments
-        #     logging.info("\nStarting experiments...")
-        #     suite.run_experiments()
-        #     logging.info("All experiments completed successfully")
-            
-        # except Exception as e:
-        #     logging.error(f"Experiment execution failed: {str(e)}", exc_info=True)
-        #     raise
-        # finally:
-        #     logging.info(f"\nResults saved in: {self.output_dir}")
+        try:
+            suite.run_experiments()
+            logging.info("All experiments completed successfully")
+        except Exception as e:
+            logging.error(f"Experiment execution failed: {str(e)}", exc_info=True)
+        finally:
+            logging.info(f"\nResults and log file saved in: {self.output_dir}")
+    
