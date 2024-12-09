@@ -1,0 +1,11 @@
+2024-12-09 16:25:43,344 - INFO - 
+Available Models:
+2024-12-09 16:25:43,344 - INFO - - hist_gradient_boosting: A histogram gradient boosting model
+2024-12-09 16:25:43,344 - INFO - 
+Starting experiments...
+2024-12-09 16:25:43,344 - INFO - 
+Starting experiment with hist_gradient_boosting
+2024-12-09 16:31:57,019 - INFO - Completed experiment with hist_gradient_boosting
+2024-12-09 16:31:57,019 - INFO - All experiments completed successfully
+2024-12-09 16:31:57,019 - INFO - 
+Results and log file saved in: outputs/20241209_162543

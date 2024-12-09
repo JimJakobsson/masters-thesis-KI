@@ -1,0 +1,11 @@
+2024-12-09 17:04:19,622 - INFO - 
+Available Models:
+2024-12-09 17:04:19,623 - INFO - - random_forest: A random forest model
+2024-12-09 17:04:19,623 - INFO - 
+Starting experiments...
+2024-12-09 17:04:19,623 - INFO - 
+Starting experiment with random_forest
+2024-12-09 17:11:20,313 - INFO - Completed experiment with random_forest
+2024-12-09 17:11:20,313 - INFO - All experiments completed successfully
+2024-12-09 17:11:20,314 - INFO - 
+Results and log file saved in: outputs/20241209_170419
