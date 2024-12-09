@@ -10,7 +10,11 @@ class ModelConfig:
         'DecisionTreeClassifier', 'XGBClassifier', 'XGBRegressor',
         'CatBoostClassifier', 'CatBoostRegressor', 'AdaBoostClassifier', 'BaggingClassifier'
     )
-
+    KERNEL_EXPLAINER_MODELS = (
+        'BaggingClassifier',
+        'StackingClassifier',
+        'VotingClassifier'
+    )
     LINEAR_MODELS = (
         'LogisticRegression', 'LinearSVC', 'RidgeClassifier', 'RidgeClassifierCV',
         'SGDClassifier', 'SGDRegressor', 'Ridge', 'Lasso', 'ElasticNet', 'LassoCV'
