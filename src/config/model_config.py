@@ -8,7 +8,7 @@ class ModelConfig:
     TREE_BASED_MODELS = (
         'RandomForestClassifier', 'GradientBoostingClassifier', 'HistGradientBoostingClassifier',
         'DecisionTreeClassifier', 'XGBClassifier', 'XGBRegressor',
-        'CatBoostClassifier', 'CatBoostRegressor', 'AdaBoostClassifier', 'BaggingClassifier'
+        'CatBoostClassifier', 'CatBoostRegressor', 'AdaBoostClassifier'
     )
     KERNEL_EXPLAINER_MODELS = (
         'BaggingClassifier',

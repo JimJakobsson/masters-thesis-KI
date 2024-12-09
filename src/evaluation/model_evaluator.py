@@ -226,6 +226,7 @@ class ModelEvaluator(BaseEvaluator):
         """Create appropriate SHAP explainer based on model type"""
         classifier = model.named_steps['classifier']
         model_name = classifier.__class__.__name__
+        background_summary = shap.kmeans(data, k=10)
 
         try:
             if model_name in ModelConfig.TREE_BASED_MODELS:
@@ -234,10 +235,15 @@ class ModelEvaluator(BaseEvaluator):
             elif model_name in ModelConfig.DEEP_LEARNING_MODELS:
                 if data is None:
                     raise ValueError("Background data required for DeepExplainer")
-                return shap.DeepExplainer(model, data)
+                return shap.DeepExplainer(model, background_summary)
             elif model_name in ModelConfig.LINEAR_MODELS:
                 print("Linear explainer created")
-                return shap.LinearExplainer(model, data)
+                return shap.LinearExplainer(model, background_summary)
+            elif model_name in ModelConfig.KERNEL_EXPLAINER_MODELS:
+                if data is None:
+                    raise ValueError("Background data required for KernelExplainer")
+                print("Kernel explainer created")
+                return shap.KernelExplainer(classifier.predict_proba, background_summary)
             else:
                 raise ValueError(f"Unsupported model type: {model_name}")
         except Exception as e:

@@ -97,84 +97,97 @@ class ModelRegistry:
             name='Bagging',
             model=BaggingClassifier(),
             param_grid={
-            'classifier__n_estimators': [10, 50, 100, 200],  # Number of base estimators
-            'classifier__max_samples': [0.5, 0.7, 0.8, 1.0],  # Fraction of samples to draw
-            'classifier__max_features': [0.5, 0.7, 0.8, 1.0],  # Fraction of features to draw
+            'classifier__n_estimators': [100],  # Number of base estimators
+            'classifier__max_samples': [0.5],  # Fraction of samples to draw
+            'classifier__max_features': [0.8],  # Fraction of features to draw
             'classifier__bootstrap': [True],  # Whether to sample with replacement
             'classifier__bootstrap_features': [False],  # Whether to sample features with replacement
             'classifier__estimator': [
                 # DecisionTreeClassifier(max_depth=10),
                 DecisionTreeClassifier(max_depth=20),
-                DecisionTreeClassifier(max_depth=30),
-                DecisionTreeClassifier()  # Unlimited depth
+                # DecisionTreeClassifier(max_depth=30),
+                # DecisionTreeClassifier()  # Unlimited depth
             ],
             'classifier__random_state': [42]  # For reproducibility
         },
             description='A bagging model'
         )
     
-    @staticmethod
     def get_stacking_config() -> ModelConfig:
-        """Get the configuration for a stacking model
+        """Get the configuration for a stacking model with properly structured parameter grid
         Returns:
         ModelConfig: Configuration with model, parameters, and metadata
         """
-        # Define base estimators with preprocessing
         base_estimators = [
-            ('hgb', HistGradientBoostingClassifier(random_state=42)),  # Best native null handling
-            ('rf', RandomForestClassifier(random_state=42)),           # Handles nulls via surrogate splits
-            ('et', ExtraTreesClassifier(random_state=42))             # Different tree-building strategy
+            ('hgb', HistGradientBoostingClassifier(
+                random_state=42,
+                class_weight={0: 1, 1: 2},
+                early_stopping=True,
+                l2_regularization=10.0,
+                learning_rate=0.3,
+                max_bins=225,
+                max_depth=6,
+                max_iter=100,
+                min_samples_leaf=20,
+                n_iter_no_change=10,
+                validation_fraction=0.1
+            )),
+            ('rf', RandomForestClassifier(
+                random_state=42,
+                bootstrap=False,
+                ccp_alpha=0.001,
+                class_weight={0: 1, 1: 2.5},
+                criterion='entropy',
+                max_depth=20,
+                max_features='sqrt',
+                min_samples_leaf=1,
+                min_samples_split=12,
+                n_estimators=100
+            )),
+            
         ]
         
-        return ModelConfig(
-        name='StackingClassifier',
-        model=StackingClassifier(
+        # Create the StackingClassifier
+        stacking_clf = StackingClassifier(
             estimators=base_estimators,
             final_estimator=HistGradientBoostingClassifier(random_state=42),
             stack_method='predict_proba'
-        ),
-        param_grid={
-            # HistGradientBoosting parameters (best with nulls)
-            'classifier__estimators__hgb__class_weight': [{0: 1, 1: 2}], 
-            'classifier__estimators__hgb__early_stopping': [True], 
-            'classifier__estimators__hgb__l2_regularization': [10.0],
-            'classifier__estimators__hgb__learning_rate': [0.3],
-            'classifier__estimators__hgb__max_bins': [225],
-            'classifier__estimators__hgb__max_depth': [6], 
-            'classifier__estimators__hgb__max_iter': [100],
-            'classifier__estimators__hgb__min_samples_leaf':[ 20], 
-            'classifier__estimators__hgb__n_iter_no_change': [10],
-            'classifier__estimators__hgb__random_state': [42],
-            'classifier__estimators__hgb__validation_fraction': [0.1],
+        )
+        
+        # Only tune the final estimator parameters
+        # param_grid = {
+        #     'classifier__final_estimator__max_iter': [100, 200],
+        #     'classifier__final_estimator__learning_rate': [0.01, 0.1],
+        #     'classifier__final_estimator__max_depth': [3, 5],
+        #     'classifier__final_estimator__l2_regularization': [1.0, 10.0]
+        # }
+        param_grid = {
+            # Learning rate: Best was 0.01 (lowest value), so explore lower values
+            'classifier__final_estimator__learning_rate': [0.001, 0.005, 0.01, 0.02, 0.05],
             
-            # RandomForest parameters           
-            'classifier__estimators__rf__bootstrap': [False],
-            'classifier__estimators__rf__ccp_alpha': [0.001], 
-            'classifier__estimators__rf__class_weight': [{0: 1, 1: 2.5}],
-            'classifier__estimators__rf__criterion': ['entropy'],
-            'classifier__estimators__rf__max_depth': [20],
-            'classifier__estimators__rf__max_features': ['sqrt'], 
-            'classifier__estimators__rf__min_samples_leaf':[ 1],
-            'classifier__estimators__rf__min_samples_split': [12], 
-            'classifier__estimators__rf__n_estimators': [100],
-            'classifier__estimators__rf__random_state': [42],
-
-            # ExtraTrees parameters
-            'classifier__estimators__et__n_estimators': [100, 200],
-            'classifier__estimators__et__max_features': ['sqrt', 'log2'],
-            'classifier__estimators__et__min_samples_leaf': [10, 20],
-            'classifier__estimators__et__max_depth': [10, 20, None],
-            'classifier__estimators__et__class_weight': ['balanced', 'balanced_subsample'],
+            # Max iterations: Best was 100 (lowest), but with lower learning rates we need more iterations
+            'classifier__final_estimator__max_iter': [100, 200, 300, 400, 500],
             
-            # Meta-classifier parameters (HistGradientBoosting)
-            'classifier__final_estimator__max_iter': [100, 200],
-            'classifier__final_estimator__learning_rate': [0.01, 0.1],
-            'classifier__final_estimator__max_depth': [3, 5],
-            'classifier__final_estimator__l2_regularization': [1.0, 10.0],
+            # Max depth: Best was 3 (lowest), so explore around this value
+            'classifier__final_estimator__max_depth': [2, 3, 4, 5],
             
+            # L2 regularization: Best was 1.0, so explore around this value
+            'classifier__final_estimator__l2_regularization': [0.1, 0.5, 1.0, 2.0, 5.0],
             
-        },
-        description='Stacking classifier for medical data that handles NULL values natively'
+            # Adding early stopping to prevent overfitting with more iterations
+            'classifier__final_estimator__early_stopping': [True],
+            'classifier__final_estimator__n_iter_no_change': [10, 20],
+            'classifier__final_estimator__validation_fraction': [0.1],
+            
+            # Adding min_samples_leaf for robustness
+            'classifier__final_estimator__min_samples_leaf': [10, 20],
+        }
+        
+        return ModelConfig(
+            name='StackingClassifier',
+            model=stacking_clf,
+            param_grid=param_grid,
+            description='Stacking classifier for medical data that handles NULL values natively'
         )
 
     @staticmethod
