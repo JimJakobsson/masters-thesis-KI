@@ -38,7 +38,13 @@ class Experiment:
         self.model = model
         self.param_grid = param_grid
         self.db_reader = db_reader
-    
+
+    def _save_classification_report(self, report: str) -> None:
+        """Saves classification report to a file"""
+        with open(self.output_dir / 'classification_report.txt', 'w') as f:
+            f.write(report)
+        print("\nClassification report saved to 'classification_report.txt'")
+
     def _evaluate_age_group(self,
                        data: pd.DataFrame,
                        age_group: AgeGroup,
@@ -124,13 +130,16 @@ class Experiment:
         pipeline = self.trainer.create_pipeline(preprocessor, self.model)
         grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
 
-        self.evaluator.evaluate_model(
+        result = self.evaluator.evaluate_model(
             grid_search, X_test, y_test, threshold=0.4)
         
+        classification_report = result['classification_report']
+        self._save_classification_report(classification_report)
+
         aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self.evaluator.calculate_feature_importance(
             best_model=grid_search.best_estimator_,
             X_test=X_test,
-            )
+        )
         
         self.evaluator.plot_all(
         model=grid_search.best_estimator_,
