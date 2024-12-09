@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import BaggingClassifier, HistGradientBoostingClassifier, GradientBoostingClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import BaggingClassifier, ExtraTreesClassifier, HistGradientBoostingClassifier, GradientBoostingClassifier, RandomForestClassifier, StackingClassifier, VotingClassifier
+from sklearn.linear_model import ElasticNet, LogisticRegression
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from models.model_config import ModelConfig
 
 class ModelRegistry:
@@ -14,39 +15,56 @@ class ModelRegistry:
             model=RandomForestClassifier(),
              param_grid={
                 'classifier__bootstrap': [False],  # Try both bootstrapping options
-                'classifier__ccp_alpha': [0.006, 0.008],  # Add pruning options
+                'classifier__ccp_alpha': [0.1, 0.001, 0.0001],  # Add pruning options
                 'classifier__class_weight': [
-                    {0: 1, 1: 2.7},
-                    # {0: 1, 1: 2.5},
+                    {0: 1, 1: 3},
+                    {0: 1, 1: 2.5},
+                    {0: 1, 1: 2.}
                     
                 ],  # More class weight ratios
                 'classifier__criterion': ['entropy'],  # Try both split criteria
-                'classifier__max_depth': [30],  # Search around successful depth
+                'classifier__max_depth': [20, 30, None],  # Search around successful depth
                 'classifier__max_features': ['sqrt'],  # Both feature selection methods
                 'classifier__min_samples_leaf': [1],  # Vary leaf size requirements
-                'classifier__min_samples_split': [6],  # Vary split requirements
-                'classifier__n_estimators': [93,94,95,96,97,98],  # Search around successful number
+                'classifier__min_samples_split': [3, 6, 9, 12],  # Vary split requirements
+                'classifier__n_estimators': [80, 90, 95, 100],  # Search around successful number
                 'classifier__random_state': [42]  # Keep for reproducibility
                 
             },
             description='A random forest model'
         )
     @staticmethod
-    def get_logistic_regression_config() -> ModelConfig:
-        """Get the configuration for a logistic regression model"""
+    def get_decision_tree_config() -> ModelConfig:
+        """Get configuration for DecisionTreeClassifier optimized for medical data with 400 features
+        Returns:
+            ModelConfig: Configuration with model, parameters, and metadata
+        """
         return ModelConfig(
-            name='Logistic Regression',
-            model=LogisticRegression(),
+            name='DecisionTree',
+            model=DecisionTreeClassifier(random_state=42),
             param_grid={
-                'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100],
-                'classifier__penalty': ['l1', 'l2'],
-                'classifier__solver': ['liblinear', 'saga'],
-                'classifier__max_iter': [100, 500, 1000],
-                'classifier__class_weight': [None, 'balanced'],
-                'classifier__random_state': [42]
+                # Control tree depth
+                'classifier__max_depth': [10, 20,30],  # Relatively shallow for interpretability
+                
+                # Minimum samples parameters
+                'classifier__min_samples_split': [10, 20, 50],  # Larger values for stability
+                'classifier__min_samples_leaf': [5, 10, 20],    # Prevent very small leaf nodes
+                
+                # Feature selection parameters
+                'classifier__max_features': ['sqrt', 'log2'],  # Reduce feature space
+                
+                # Handle imbalanced classes
+                'classifier__class_weight': ['balanced', None],
+                
+                # Splitting criteria
+                'classifier__criterion': ['gini', 'entropy'],
+                
+                # Prevent perfect splits that might be noise
+                'classifier__min_impurity_decrease': [0.0001, 0.001, 0.01]
             },
-            description='A logistic regression model'
+            description='Decision tree classifier optimized for medical data analysis'
         )
+
     @staticmethod
     def get_hist_gradient_boosting_config() -> ModelConfig:
         """Get the configuration for a histogram gradient boosting model"""
@@ -79,14 +97,154 @@ class ModelRegistry:
             name='Bagging',
             model=BaggingClassifier(),
             param_grid={
-                'classifier__n_estimators': [10, 50, 100],
-                'classifier__max_samples': [0.5, 0.7, 1.0],
-                'classifier__max_features': [0.5, 0.7, 1.0],
-                'classifier__random_state': [42]
-            },
+            'classifier__n_estimators': [10, 50, 100, 200],  # Number of base estimators
+            'classifier__max_samples': [0.5, 0.7, 0.8, 1.0],  # Fraction of samples to draw
+            'classifier__max_features': [0.5, 0.7, 0.8, 1.0],  # Fraction of features to draw
+            'classifier__bootstrap': [True, False],  # Whether to sample with replacement
+            'classifier__bootstrap_features': [True, False],  # Whether to sample features with replacement
+            'classifier__estimator': [
+                DecisionTreeClassifier(max_depth=10),
+                DecisionTreeClassifier(max_depth=20),
+                DecisionTreeClassifier()  # Unlimited depth
+            ],
+            'classifier__random_state': [42]  # For reproducibility
+        },
             description='A bagging model'
         )
     
+    @staticmethod
+    def get_stacking_config() -> ModelConfig:
+        """Get the configuration for a stacking model
+        Returns:
+        ModelConfig: Configuration with model, parameters, and metadata
+        """
+        # Define base estimators with preprocessing
+        base_estimators = [
+            ('hgb', HistGradientBoostingClassifier(random_state=42)),  # Best native null handling
+            ('rf', RandomForestClassifier(random_state=42)),           # Handles nulls via surrogate splits
+            ('et', ExtraTreesClassifier(random_state=42))             # Different tree-building strategy
+        ]
+        
+        return ModelConfig(
+        name='StackingClassifier',
+        model=StackingClassifier(
+            estimators=base_estimators,
+            final_estimator=HistGradientBoostingClassifier(random_state=42),
+            stack_method='predict_proba'
+        ),
+        param_grid={
+            # HistGradientBoosting parameters (best with nulls)
+            'classifier__hgb__max_iter': [100, 200, 300],
+            'classifier__hgb__learning_rate': [0.01, 0.1],
+            'classifier__hgb__max_depth': [3, 5, 10],
+            'classifier__hgb__min_samples_leaf': [10, 20],
+            'classifier__hgb__l2_regularization': [0, 1.0, 10.0],
+            'classifier__hgb__class_weight': ['balanced', None],
+            
+            # RandomForest parameters           
+            'classifier__rf__bootstrap': [False],  # Try both bootstrapping options
+            'classifier__rf__ccp_alpha': [0.006, 0.008],  # Add pruning options
+            'classifier__rf__class_weight': [
+                {0: 1, 1: 2.7},
+                # {0: 1, 1: 2.5},
+                
+            ],  # More class weight ratios
+            'classifier__rf__criterion': ['entropy'],  # Try both split criteria
+            'classifier__rf__max_depth': [30],  # Search around successful depth
+            'classifier__rf__max_features': ['sqrt'],  # Both feature selection methods
+            'classifier__rf__min_samples_leaf': [1],  # Vary leaf size requirements
+            'classifier__rf__min_samples_split': [6],  # Vary split requirements
+            'classifier__rf__n_estimators': [95],  # Search around successful number
+            'classifier__rf__random_state': [42],  # Keep for reproducibility
+
+            # ExtraTrees parameters
+            'classifier__et__n_estimators': [100, 200],
+            'classifier__et__max_features': ['sqrt', 'log2'],
+            'classifier__et__min_samples_leaf': [10, 20],
+            'classifier__et__max_depth': [10, 20, None],
+            'classifier__et__class_weight': ['balanced', 'balanced_subsample'],
+            
+            # Meta-classifier parameters (HistGradientBoosting)
+            'final_estimator__max_iter': [100, 200],
+            'final_estimator__learning_rate': [0.01, 0.1],
+            'final_estimator__max_depth': [3, 5],
+            'final_estimator__l2_regularization': [1.0, 10.0],
+            
+            
+        },
+        description='Stacking classifier for medical data that handles NULL values natively'
+        )
+
+    @staticmethod
+    def get_voting_config() -> ModelConfig:
+        """Get configuration for VotingClassifier with diverse base estimators
+        
+        Returns:
+            ModelConfig: Configuration with model, parameters, and metadata
+        """
+        # Define estimators with preprocessing where needed
+        estimators = [
+            ('hgb', HistGradientBoostingClassifier(random_state=42)),  # Best native NaN handling
+            ('rf', RandomForestClassifier(random_state=42)),           # Handles NaN via surrogate splits
+            ('et', ExtraTreesClassifier(random_state=42))             # Another approach to tree building
+        ]
+        
+        return ModelConfig(
+            name='VotingClassifier',
+            model=VotingClassifier(
+                estimators=estimators,
+                voting='soft'  # Use probability predictions
+            ),
+            param_grid={
+                # HistGradientBoosting parameters
+                'hgb__max_iter': [100, 200],
+                'hgb__learning_rate': [0.01, 0.1],
+                'hgb__max_depth': [3, 5, 10],
+                'hgb__min_samples_leaf': [10, 20],
+                'hgb__l2_regularization': [0, 1.0],
+                'hgb__class_weight': ['balanced', None],
+                
+                # RandomForest parameters
+                'rf__n_estimators': [100, 200],
+                'rf__max_depth': [10, 20, None],
+                'rf__min_samples_leaf': [10, 20],
+                'rf__max_features': ['sqrt', 'log2'],
+                'rf__class_weight': ['balanced', 'balanced_subsample'],
+                
+                # ExtraTrees parameters
+                'et__n_estimators': [100, 200],
+                'et__max_depth': [10, 20, None],
+                'et__min_samples_leaf': [10, 20],
+                'et__max_features': ['sqrt', 'log2'],
+                'et__class_weight': ['balanced', 'balanced_subsample'],
+                
+                # Voting parameters
+                'voting': ['soft'],  # Hard voting still works but soft usually better
+                
+                # Weights for each classifier
+                'weights': [[1, 1, 1],    # Equal weights
+                        [2, 1, 1],     # Emphasis on HistGradientBoosting
+                        [1, 2, 1],     # Emphasis on RandomForest
+                        [1, 1, 2]]     # Emphasis on ExtraTrees
+            },
+            description='Voting classifier with NaN-handling estimators'
+    )
+    @staticmethod
+    def get_logistic_regression_config() -> ModelConfig:
+        """Get the configuration for a logistic regression model"""
+        return ModelConfig(
+            name='Logistic Regression',
+            model=LogisticRegression(),
+            param_grid={
+                'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100],
+                'classifier__penalty': ['l1', 'l2'],
+                'classifier__solver': ['liblinear', 'saga'],
+                'classifier__max_iter': [100, 500, 1000],
+                'classifier__class_weight': [None, 'balanced'],
+                'classifier__random_state': [42]
+            },
+            description='A logistic regression model'
+        )
 
     # @staticmethod
     # def get_gradient_boosting_config() -> ModelConfig:

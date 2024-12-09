@@ -23,12 +23,12 @@ class FeatureImportancePlotter(BasePlotter):
                   dpi=self.config.DPI)
         
         # Create plot
-        sns.barplot(
-            x='importance_abs_mean',
-            y='feature',
-            data=feature_importance,
-            palette='rocket'
-        )
+        # sns.barplot(
+        #     x='importance_abs_mean',
+        #     y='feature',
+        #     data=feature_importance,
+        #     palette='rocket'
+        # )
         plt.barh(feature_importance['feature'], 
                  feature_importance['importance_abs_mean'], 
                  color='b')

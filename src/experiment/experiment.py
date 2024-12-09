@@ -39,11 +39,13 @@ class Experiment:
         self.param_grid = param_grid
         self.db_reader = db_reader
 
-    def _save_classification_report(self, report: str) -> None:
+    def _save_classification_report(self, report: str, best_params: str) -> None:
         """Saves classification report to a file"""
         with open(self.output_dir / 'classification_report.txt', 'w') as f:
             f.write(report)
-        print("\nClassification report saved to 'classification_report.txt'")
+            f.write("\n\nBest parameters found during grid search:\n")
+            f.write(str(best_params))
+        print("\nClassification report and best params saved to 'classification_report.txt'")
 
     def _evaluate_age_group(self,
                        data: pd.DataFrame,
@@ -134,7 +136,8 @@ class Experiment:
             grid_search, X_test, y_test, threshold=0.4)
         
         classification_report = result['classification_report']
-        self._save_classification_report(classification_report)
+        best_params = result['best_params']
+        self._save_classification_report(classification_report, best_params)
 
         aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self.evaluator.calculate_feature_importance(
             best_model=grid_search.best_estimator_,

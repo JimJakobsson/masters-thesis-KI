@@ -52,9 +52,10 @@ class ShapPlotter(BasePlotter):
         values = np.array([aggregated_shap[feature][observation_idx] for feature in features])
         data = X_test.iloc[observation_idx][features].values
         # Check if expected_value is a list or a single value
-        if isinstance(explainer.expected_value, (list, np.ndarray)):
+        if isinstance(explainer.expected_value, (list, np.ndarray)) and len(explainer.expected_value) > class_to_explain:
             base_value = float(explainer.expected_value[class_to_explain])
         else:
+            # Fall back to using the single value
             base_value = float(explainer.expected_value)
 
         explanation = shap.Explanation(
