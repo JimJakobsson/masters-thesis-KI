@@ -9,11 +9,11 @@ class ModelSelector:
     def __init__(self):
         self.registry = {
             
-            'random_forest': ModelRegistry.get_random_forest_config,
+            # 'random_forest': ModelRegistry.get_random_forest_config,
             # 'decision_tree': ModelRegistry.get_decision_tree_config,
             # 'hist_gradient_boosting': ModelRegistry.get_hist_gradient_boosting_config,
             # 'bagging': ModelRegistry.get_bagging_config,
-            # 'stacking': ModelRegistry.get_stacking_config,
+            'stacking': ModelRegistry.get_stacking_config,
             # 'voting': ModelRegistry.get_voting_config,
             # 'gradient_boosting': ModelRegistry.get_gradient_boosting_config,
             # 'logistic_regression': ModelRegistry.get_logistic_regression_config,

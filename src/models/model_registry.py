@@ -100,11 +100,12 @@ class ModelRegistry:
             'classifier__n_estimators': [10, 50, 100, 200],  # Number of base estimators
             'classifier__max_samples': [0.5, 0.7, 0.8, 1.0],  # Fraction of samples to draw
             'classifier__max_features': [0.5, 0.7, 0.8, 1.0],  # Fraction of features to draw
-            'classifier__bootstrap': [True, False],  # Whether to sample with replacement
-            'classifier__bootstrap_features': [True, False],  # Whether to sample features with replacement
+            'classifier__bootstrap': [True],  # Whether to sample with replacement
+            'classifier__bootstrap_features': [False],  # Whether to sample features with replacement
             'classifier__estimator': [
-                DecisionTreeClassifier(max_depth=10),
+                # DecisionTreeClassifier(max_depth=10),
                 DecisionTreeClassifier(max_depth=20),
+                DecisionTreeClassifier(max_depth=30),
                 DecisionTreeClassifier()  # Unlimited depth
             ],
             'classifier__random_state': [42]  # For reproducibility
@@ -134,41 +135,42 @@ class ModelRegistry:
         ),
         param_grid={
             # HistGradientBoosting parameters (best with nulls)
-            'classifier__hgb__max_iter': [100, 200, 300],
-            'classifier__hgb__learning_rate': [0.01, 0.1],
-            'classifier__hgb__max_depth': [3, 5, 10],
-            'classifier__hgb__min_samples_leaf': [10, 20],
-            'classifier__hgb__l2_regularization': [0, 1.0, 10.0],
-            'classifier__hgb__class_weight': ['balanced', None],
+            'classifier__estimators__hgb__class_weight': [{0: 1, 1: 2}], 
+            'classifier__estimators__hgb__early_stopping': [True], 
+            'classifier__estimators__hgb__l2_regularization': [10.0],
+            'classifier__estimators__hgb__learning_rate': [0.3],
+            'classifier__estimators__hgb__max_bins': [225],
+            'classifier__estimators__hgb__max_depth': [6], 
+            'classifier__estimators__hgb__max_iter': [100],
+            'classifier__estimators__hgb__min_samples_leaf':[ 20], 
+            'classifier__estimators__hgb__n_iter_no_change': [10],
+            'classifier__estimators__hgb__random_state': [42],
+            'classifier__estimators__hgb__validation_fraction': [0.1],
             
             # RandomForest parameters           
-            'classifier__rf__bootstrap': [False],  # Try both bootstrapping options
-            'classifier__rf__ccp_alpha': [0.006, 0.008],  # Add pruning options
-            'classifier__rf__class_weight': [
-                {0: 1, 1: 2.7},
-                # {0: 1, 1: 2.5},
-                
-            ],  # More class weight ratios
-            'classifier__rf__criterion': ['entropy'],  # Try both split criteria
-            'classifier__rf__max_depth': [30],  # Search around successful depth
-            'classifier__rf__max_features': ['sqrt'],  # Both feature selection methods
-            'classifier__rf__min_samples_leaf': [1],  # Vary leaf size requirements
-            'classifier__rf__min_samples_split': [6],  # Vary split requirements
-            'classifier__rf__n_estimators': [95],  # Search around successful number
-            'classifier__rf__random_state': [42],  # Keep for reproducibility
+            'classifier__estimators__rf__bootstrap': [False],
+            'classifier__estimators__rf__ccp_alpha': [0.001], 
+            'classifier__estimators__rf__class_weight': [{0: 1, 1: 2.5}],
+            'classifier__estimators__rf__criterion': ['entropy'],
+            'classifier__estimators__rf__max_depth': [20],
+            'classifier__estimators__rf__max_features': ['sqrt'], 
+            'classifier__estimators__rf__min_samples_leaf':[ 1],
+            'classifier__estimators__rf__min_samples_split': [12], 
+            'classifier__estimators__rf__n_estimators': [100],
+            'classifier__estimators__rf__random_state': [42],
 
             # ExtraTrees parameters
-            'classifier__et__n_estimators': [100, 200],
-            'classifier__et__max_features': ['sqrt', 'log2'],
-            'classifier__et__min_samples_leaf': [10, 20],
-            'classifier__et__max_depth': [10, 20, None],
-            'classifier__et__class_weight': ['balanced', 'balanced_subsample'],
+            'classifier__estimators__et__n_estimators': [100, 200],
+            'classifier__estimators__et__max_features': ['sqrt', 'log2'],
+            'classifier__estimators__et__min_samples_leaf': [10, 20],
+            'classifier__estimators__et__max_depth': [10, 20, None],
+            'classifier__estimators__et__class_weight': ['balanced', 'balanced_subsample'],
             
             # Meta-classifier parameters (HistGradientBoosting)
-            'final_estimator__max_iter': [100, 200],
-            'final_estimator__learning_rate': [0.01, 0.1],
-            'final_estimator__max_depth': [3, 5],
-            'final_estimator__l2_regularization': [1.0, 10.0],
+            'classifier__final_estimator__max_iter': [100, 200],
+            'classifier__final_estimator__learning_rate': [0.01, 0.1],
+            'classifier__final_estimator__max_depth': [3, 5],
+            'classifier__final_estimator__l2_regularization': [1.0, 10.0],
             
             
         },
@@ -196,20 +198,30 @@ class ModelRegistry:
                 voting='soft'  # Use probability predictions
             ),
             param_grid={
-                # HistGradientBoosting parameters
-                'hgb__max_iter': [100, 200],
-                'hgb__learning_rate': [0.01, 0.1],
-                'hgb__max_depth': [3, 5, 10],
-                'hgb__min_samples_leaf': [10, 20],
-                'hgb__l2_regularization': [0, 1.0],
-                'hgb__class_weight': ['balanced', None],
+                    # HistGradientBoosting parameters (best with nulls)
+                'classifier__class_weight': [{0: 1, 1: 2}], 
+                'classifier__early_stopping': [True], 
+                'classifier__l2_regularization': 10.0,
+                'classifier__learning_rate': 0.3,
+                'classifier__max_bins': 225,
+                'classifier__max_depth': 6, 
+                'classifier__max_iter': 100,
+                'classifier__min_samples_leaf': 20, 
+                'classifier__n_iter_no_change': 10,
+                'classifier__random_state': 42,
+                'classifier__validation_fraction': 0.1,
                 
-                # RandomForest parameters
-                'rf__n_estimators': [100, 200],
-                'rf__max_depth': [10, 20, None],
-                'rf__min_samples_leaf': [10, 20],
-                'rf__max_features': ['sqrt', 'log2'],
-                'rf__class_weight': ['balanced', 'balanced_subsample'],
+                # RandomForest parameters           
+                'classifier__bootstrap': False,
+                'classifier__ccp_alpha': 0.001, 
+                'classifier__class_weight': [{0: 1, 1: 2.5}],
+                'classifier__criterion': ['entropy'],
+                'classifier__max_depth': 20,
+                'classifier__max_features': ['sqrt'], 
+                'classifier__min_samples_leaf': 1,
+                'classifier__min_samples_split': 12, 
+                'classifier__n_estimators': 100,
+                'classifier__random_state': 42,
                 
                 # ExtraTrees parameters
                 'et__n_estimators': [100, 200],
