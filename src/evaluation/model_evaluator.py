@@ -6,16 +6,15 @@ import shap
 from sklearn.base import BaseEstimator
 from config.model_config import ModelConfig
 from config.path_config import PathConfig
-from preprocessing.preprocessing_result import PreprocessingResult
 from .base_evaluator import BaseEvaluator
 from .report_classification import ReportClassification
 from visualisation.model_visualiser import ModelVisualiser
 from visualisation.feature_importance_plotter import FeatureImportancePlotter
 from visualisation.shap_plots import ShapPlotter
 from visualisation.learning_curve import LearningCurvePlotter
-from preprocessing.pipeline_creator import PipelineCreator
 from .metrics import Metrics
-from preprocessing.preprocessing_result import PreprocessingResult  # Import the class
+from sklearn.model_selection import StratifiedShuffleSplit
+
 
 # from ..utils.validation import validate_shap_calculation
 
@@ -226,7 +225,7 @@ class ModelEvaluator(BaseEvaluator):
         """Create appropriate SHAP explainer based on model type"""
         classifier = model.named_steps['classifier']
         model_name = classifier.__class__.__name__
-        background_summary = shap.kmeans(data, k=10)
+        background_summary = pd.DataFrame(data).sample(n=100, random_state=42)
 
         try:
             if model_name in ModelConfig.TREE_BASED_MODELS:

@@ -15,6 +15,7 @@ class ModelSelector:
             # 'bagging': ModelRegistry.get_bagging_config,
             'stacking': ModelRegistry.get_stacking_config,
             # 'voting': ModelRegistry.get_voting_config,
+
             # 'gradient_boosting': ModelRegistry.get_gradient_boosting_config,
             # 'logistic_regression': ModelRegistry.get_logistic_regression_config,
             # 'svm': ModelRegistry.get_svm_config,

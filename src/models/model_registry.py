@@ -42,27 +42,14 @@ class ModelRegistry:
         return ModelConfig(
             name='DecisionTree',
             model=DecisionTreeClassifier(random_state=42),
-            param_grid={
-                # Control tree depth
-                'classifier__max_depth': [10, 20,30],  # Relatively shallow for interpretability
-                
-                # Minimum samples parameters
-                'classifier__min_samples_split': [10, 20, 50],  # Larger values for stability
-                'classifier__min_samples_leaf': [5, 10, 20],    # Prevent very small leaf nodes
-                
-                # Feature selection parameters
-                'classifier__max_features': ['sqrt', 'log2'],  # Reduce feature space
-                
-                # Handle imbalanced classes
-                'classifier__class_weight': ['balanced', None],
-                
-                # Splitting criteria
-                'classifier__criterion': ['gini', 'entropy'],
-                
-                # Prevent perfect splits that might be noise
-                'classifier__min_impurity_decrease': [0.0001, 0.001, 0.01]
-            },
-            description='Decision tree classifier optimized for medical data analysis'
+            param_grid={'classifier__class_weight':[ {0: 1, 1: 2}], 
+                        'classifier__criterion': ['gini'], 
+                        'classifier__max_depth': [15], 
+                        'classifier__max_features': [None], 
+                        'classifier__min_impurity_decrease':[ 0.0001], 
+                        'classifier__min_samples_leaf':[ 1], 
+                        'classifier__min_samples_split':[ 5]},
+            description='Decision tree classifier optimized for medical data analysis with enhanced flexibility'
         )
 
     @staticmethod
@@ -92,29 +79,77 @@ class ModelRegistry:
         )
     
     def get_bagging_config() -> ModelConfig:
-        """Get the configuration for a bagging model"""
+        """Get the configuration for an enhanced bagging model suitable for medical data
+        
+        Returns:
+            ModelConfig: Configuration with diverse estimators and parameters
+        """
+        # Define base estimators with different configurations
+        base_estimators = [
+            # HistGradientBoostingClassifier for native NULL handling
+            HistGradientBoostingClassifier(
+                random_state=42,
+                max_depth=10,
+                learning_rate=0.1,
+                early_stopping=True
+            ),
+            
+            
+            DecisionTreeClassifier(
+                max_depth=20,
+                min_samples_leaf=10,
+                class_weight='balanced',
+                random_state=43
+            ),
+            
+            # More flexible decision tree
+            DecisionTreeClassifier(
+                max_depth=None,
+                min_samples_leaf=20,
+                min_samples_split=10,
+                random_state=44
+            )
+        ]
+        
         return ModelConfig(
             name='Bagging',
-            model=BaggingClassifier(),
+            model=BaggingClassifier(random_state=42),
             param_grid={
-            'classifier__n_estimators': [100],  # Number of base estimators
-            'classifier__max_samples': [0.5],  # Fraction of samples to draw
-            'classifier__max_features': [0.8],  # Fraction of features to draw
-            'classifier__bootstrap': [True],  # Whether to sample with replacement
-            'classifier__bootstrap_features': [False],  # Whether to sample features with replacement
-            'classifier__estimator': [
-                # DecisionTreeClassifier(max_depth=10),
-                DecisionTreeClassifier(max_depth=20),
-                # DecisionTreeClassifier(max_depth=30),
-                # DecisionTreeClassifier()  # Unlimited depth
-            ],
-            'classifier__random_state': [42]  # For reproducibility
-        },
-            description='A bagging model'
+                # Core bagging parameters
+                'classifier__n_estimators': [50, 100, 200],
+                'classifier__max_samples': [0.5, 0.7, 1.0],
+                'classifier__max_features': [0.6, 0.8, 1.0],
+                
+                # Sampling strategy
+                'classifier__bootstrap': [True],  # Bootstrap sampling for robustness
+                'classifier__bootstrap_features': [False, True],  # Try both feature sampling approaches
+                
+                # Try different base estimators
+                'classifier__estimator': base_estimators,
+                
+                # Fixed parameters for reproducibility
+                'classifier__random_state': [42],
+                
+                # Parallel processing
+                'classifier__n_jobs': [-1]  # Use all available cores
+            },
+            description='Enhanced bagging model with diverse estimators for medical data'
         )
+
     
     def get_stacking_config() -> ModelConfig:
+        
         """Get the configuration for a stacking model with properly structured parameter grid
+        
+        This code defines a stacking classifier, which is an ensemble learning method that 
+        combines multiple base models.
+
+        The stacking approach:
+
+        Takes predictions from both base models using probability estimates ('predict_proba')
+        Uses another Gradient Boosting Classifier as the final meta-learner
+        Can weight the importance of each base model's predictions (controlled by 'classifier__weights' parameter)
+
         Returns:
         ModelConfig: Configuration with model, parameters, and metadata
         """
@@ -150,38 +185,47 @@ class ModelRegistry:
         # Create the StackingClassifier
         stacking_clf = StackingClassifier(
             estimators=base_estimators,
-            final_estimator=HistGradientBoostingClassifier(random_state=42),
+            # final_estimator=HistGradientBoostingClassifier(random_state=42),
+            final_estimator=RandomForestClassifier(random_state=42),
             stack_method='predict_proba'
         )
         
         # Only tune the final estimator parameters
-        # param_grid = {
-        #     'classifier__final_estimator__max_iter': [100, 200],
-        #     'classifier__final_estimator__learning_rate': [0.01, 0.1],
-        #     'classifier__final_estimator__max_depth': [3, 5],
-        #     'classifier__final_estimator__l2_regularization': [1.0, 10.0]
-        # }
         param_grid = {
-            # Learning rate: Best was 0.01 (lowest value), so explore lower values
-            'classifier__final_estimator__learning_rate': [0.001, 0.005, 0.01, 0.02, 0.05],
+            # Final estimator parameters
+            'classifier__final_estimator__n_estimators': [100, 200, 300],
+            'classifier__final_estimator__max_depth': [20, 30, 40, None],
+            'classifier__final_estimator__min_samples_leaf': [5, 10, 15],
+            'classifier__final_estimator__max_features': ['sqrt'],
+            'classifier__final_estimator__bootstrap': [False],
             
-            # Max iterations: Best was 100 (lowest), but with lower learning rates we need more iterations
-            'classifier__final_estimator__max_iter': [100, 200, 300, 400, 500],
+            'classifier__final_estimator__min_samples_split': [5, 10, 15],
             
-            # Max depth: Best was 3 (lowest), so explore around this value
-            'classifier__final_estimator__max_depth': [2, 3, 4, 5],
-            
-            # L2 regularization: Best was 1.0, so explore around this value
-            'classifier__final_estimator__l2_regularization': [0.1, 0.5, 1.0, 2.0, 5.0],
-            
-            # Adding early stopping to prevent overfitting with more iterations
-            'classifier__final_estimator__early_stopping': [True],
-            'classifier__final_estimator__n_iter_no_change': [10, 20],
-            'classifier__final_estimator__validation_fraction': [0.1],
-            
-            # Adding min_samples_leaf for robustness
-            'classifier__final_estimator__min_samples_leaf': [10, 20],
+            # Stack weights for base estimators
+            'classifier__final_estimator__class_weight': [
+                {0: 1, 1: 1},  # Equal weights
+                {0: 1, 1: 2},  # Emphasis on HistGradientBoosting
+                {0: 2, 1: 1},  # Emphasis on RandomForest
+               ]  
         }
+        # param_grid = {
+        #     # Learning rate: Best was 0.01, exploring around this value
+        #     'classifier__final_estimator__learning_rate': [0.005, 0.01, 0.02],
+            
+        #     # Max depth: Best was 3, keeping focused range
+        #     'classifier__final_estimator__max_depth': [2, 3, 4],
+            
+        #     # L2 regularization: Best was 1.0, exploring around this value
+        #     'classifier__final_estimator__l2_regularization': [0.5, 1.0, 2.0],
+            
+        #     # Early stopping for robustness
+        #     'classifier__final_estimator__early_stopping': [True],
+        #     'classifier__final_estimator__n_iter_no_change': [10],
+        #     'classifier__final_estimator__validation_fraction': [0.1],
+        #     'classifier__weights': [[1, 1],    # Equal weights
+        #                 [2, 1],     # Emphasis on HistGradientBoosting
+        #                 [1, 2]]     # Emphasis on RandomForest
+        # }
         
         return ModelConfig(
             name='StackingClassifier',
@@ -198,62 +242,58 @@ class ModelRegistry:
             ModelConfig: Configuration with model, parameters, and metadata
         """
         # Define estimators with preprocessing where needed
-        estimators = [
-            ('hgb', HistGradientBoostingClassifier(random_state=42)),  # Best native NaN handling
-            ('rf', RandomForestClassifier(random_state=42)),           # Handles NaN via surrogate splits
-            ('et', ExtraTreesClassifier(random_state=42))             # Another approach to tree building
+        # estimators = [
+        #     ('hgb', HistGradientBoostingClassifier(random_state=42)),  # Best native NaN handling
+        #     ('rf', RandomForestClassifier(random_state=42)),           # Handles NaN via surrogate splits
+        #     ('et', ExtraTreesClassifier(random_state=42))             # Another approach to tree building
+        # ]
+        base_estimators = [
+            ('hgb', HistGradientBoostingClassifier(
+                random_state=42,
+                class_weight={0: 1, 1: 2},
+                early_stopping=True,
+                l2_regularization=10.0,
+                learning_rate=0.3,
+                max_bins=225,
+                max_depth=6,
+                max_iter=100,
+                min_samples_leaf=20,
+                n_iter_no_change=10,
+                validation_fraction=0.1
+            )),
+            ('rf', RandomForestClassifier(
+                random_state=42,
+                bootstrap=False,
+                ccp_alpha=0.001,
+                class_weight={0: 1, 1: 2.5},
+                criterion='entropy',
+                max_depth=20,
+                max_features='sqrt',
+                min_samples_leaf=1,
+                min_samples_split=12,
+                n_estimators=100
+            )),
+            
         ]
-        
+
+        voting_clf = VotingClassifier(
+            estimators=base_estimators,
+            voting='soft'  # Use probability predictions
+        )
+
         return ModelConfig(
             name='VotingClassifier',
-            model=VotingClassifier(
-                estimators=estimators,
-                voting='soft'  # Use probability predictions
-            ),
+            model=voting_clf,
             param_grid={
-                    # HistGradientBoosting parameters (best with nulls)
-                'classifier__class_weight': [{0: 1, 1: 2}], 
-                'classifier__early_stopping': [True], 
-                'classifier__l2_regularization': 10.0,
-                'classifier__learning_rate': 0.3,
-                'classifier__max_bins': 225,
-                'classifier__max_depth': 6, 
-                'classifier__max_iter': 100,
-                'classifier__min_samples_leaf': 20, 
-                'classifier__n_iter_no_change': 10,
-                'classifier__random_state': 42,
-                'classifier__validation_fraction': 0.1,
-                
-                # RandomForest parameters           
-                'classifier__bootstrap': False,
-                'classifier__ccp_alpha': 0.001, 
-                'classifier__class_weight': [{0: 1, 1: 2.5}],
-                'classifier__criterion': ['entropy'],
-                'classifier__max_depth': 20,
-                'classifier__max_features': ['sqrt'], 
-                'classifier__min_samples_leaf': 1,
-                'classifier__min_samples_split': 12, 
-                'classifier__n_estimators': 100,
-                'classifier__random_state': 42,
-                
-                # ExtraTrees parameters
-                'et__n_estimators': [100, 200],
-                'et__max_depth': [10, 20, None],
-                'et__min_samples_leaf': [10, 20],
-                'et__max_features': ['sqrt', 'log2'],
-                'et__class_weight': ['balanced', 'balanced_subsample'],
-                
-                # Voting parameters
-                'voting': ['soft'],  # Hard voting still works but soft usually better
                 
                 # Weights for each classifier
-                'weights': [[1, 1, 1],    # Equal weights
-                        [2, 1, 1],     # Emphasis on HistGradientBoosting
-                        [1, 2, 1],     # Emphasis on RandomForest
-                        [1, 1, 2]]     # Emphasis on ExtraTrees
+                'classifier__weights': [[1, 1],    # Equal weights
+                        [2, 1],     # Emphasis on HistGradientBoosting
+                        [1, 2]]     # Emphasis on RandomForest
             },
             description='Voting classifier with NaN-handling estimators'
-    )
+        )
+        
     @staticmethod
     def get_logistic_regression_config() -> ModelConfig:
         """Get the configuration for a logistic regression model"""

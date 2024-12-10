@@ -1,0 +1,12 @@
+              precision    recall  f1-score   support
+
+           0       0.81      0.56      0.66        54
+           1       0.70      0.89      0.78        63
+
+    accuracy                           0.74       117
+   macro avg       0.76      0.72      0.72       117
+weighted avg       0.75      0.74      0.73       117
+
+
+Best parameters found during grid search:
+{'classifier__final_estimator__bootstrap': False, 'classifier__final_estimator__class_weight': {0: 1, 1: 1}, 'classifier__final_estimator__max_depth': 20, 'classifier__final_estimator__max_features': 'sqrt', 'classifier__final_estimator__min_samples_leaf': 15, 'classifier__final_estimator__min_samples_split': 5, 'classifier__final_estimator__n_estimators': 200}

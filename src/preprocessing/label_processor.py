@@ -26,6 +26,7 @@ class LabelProcessor:
         )
         
         # Clean up and validate
+        # Drop rows with null labels
         df = df.dropna(subset=['labels'])
         df['labels'] = df['labels'].astype(int)
         

@@ -1,0 +1,11 @@
+2024-12-09 22:18:06,886 - INFO - 
+Available Models:
+2024-12-09 22:18:06,886 - INFO - - decision_tree: Decision tree classifier optimized for medical data analysis with enhanced flexibility
+2024-12-09 22:18:06,886 - INFO - 
+Starting experiments...
+2024-12-09 22:18:06,886 - INFO - 
+Starting experiment with decision_tree
+2024-12-09 22:18:17,008 - INFO - Completed experiment with decision_tree
+2024-12-09 22:18:17,008 - INFO - All experiments completed successfully
+2024-12-09 22:18:17,008 - INFO - 
+Results and log file saved in: outputs/20241209_221806

@@ -1,0 +1,13 @@
+              precision    recall  f1-score   support
+
+           0       0.79      0.61      0.69        54
+           1       0.72      0.86      0.78        63
+
+    accuracy                           0.74       117
+   macro avg       0.75      0.73      0.74       117
+weighted avg       0.75      0.74      0.74       117
+
+
+Best parameters found during grid search:
+{'classifier__bootstrap': True, 'classifier__bootstrap_features': True, 'classifier__estimator': DecisionTreeClassifier(class_weight='balanced', max_depth=20,
+                       min_samples_leaf=10, random_state=43), 'classifier__max_features': 0.6, 'classifier__max_samples': 1.0, 'classifier__n_estimators': 100, 'classifier__n_jobs': -1, 'classifier__random_state': 42}
