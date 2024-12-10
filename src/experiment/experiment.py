@@ -11,7 +11,8 @@ import DatabaseReader
 from evaluation.model_evaluator import ModelEvaluator
 from experiment.datahandler import DataHandler
 from experiment.experiment_config import AgeGroup, ExperimentConfig
-from experiment.model_trainer import ModelTrainer
+from experiment.model_trainer_grid_search import ModelTrainerGridSearch
+from experiment.model_trainer_optuna import ModelTrainerOptuna
 from preprocessing import preprocessing_result
 from preprocessing.data_preprocessor import DataPreprocessor
 from preprocessing.preprocessing_result import PreprocessingResult
@@ -30,7 +31,9 @@ class Experiment:
         
         # Initialize components
         self.data_handler = DataHandler(self.config)
-        self.trainer = ModelTrainer(self.config)
+        # self.trainer = ModelTrainerGridSearch(self.config)
+        self.trainer = ModelTrainerOptuna(self.config)
+
         self.preprocessor = DataPreprocessor()
         self.evaluator = ModelEvaluator(self.output_dir)
         

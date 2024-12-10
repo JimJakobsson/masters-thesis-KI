@@ -1,6 +1,7 @@
 from typing import List
 from models.model_config import ModelConfig
 from models.model_registry import ModelRegistry
+from models.optuna_model_registry import OptunaModelRegistry
 
 
 class ModelSelector:
@@ -9,11 +10,13 @@ class ModelSelector:
     def __init__(self):
         self.registry = {
             
+            'random_forest': OptunaModelRegistry.get_random_forest_config,
+
             # 'random_forest': ModelRegistry.get_random_forest_config,
             # 'decision_tree': ModelRegistry.get_decision_tree_config,
             # 'hist_gradient_boosting': ModelRegistry.get_hist_gradient_boosting_config,
             # 'bagging': ModelRegistry.get_bagging_config,
-            'stacking': ModelRegistry.get_stacking_config,
+            # 'stacking': ModelRegistry.get_stacking_config,
             # 'voting': ModelRegistry.get_voting_config,
 
             # 'gradient_boosting': ModelRegistry.get_gradient_boosting_config,

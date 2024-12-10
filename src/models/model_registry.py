@@ -13,8 +13,8 @@ class ModelRegistry:
         return ModelConfig(
             name='Random Forest',
             model=RandomForestClassifier(),
-             param_grid={
-                'classifier__bootstrap': [False],  # Try both bootstrapping options
+            param_grid={
+                'classifier__bootstrap': [True, False],  # Try both bootstrapping options
                 'classifier__ccp_alpha': [0.1, 0.001, 0.0001],  # Add pruning options
                 'classifier__class_weight': [
                     {0: 1, 1: 3},
@@ -23,7 +23,7 @@ class ModelRegistry:
                     
                 ],  # More class weight ratios
                 'classifier__criterion': ['entropy'],  # Try both split criteria
-                'classifier__max_depth': [20, 30, None],  # Search around successful depth
+                'classifier__max_depth': [20, 30],  # Search around successful depth
                 'classifier__max_features': ['sqrt'],  # Both feature selection methods
                 'classifier__min_samples_leaf': [1],  # Vary leaf size requirements
                 'classifier__min_samples_split': [3, 6, 9, 12],  # Vary split requirements
@@ -194,7 +194,7 @@ class ModelRegistry:
         param_grid = {
             # Final estimator parameters
             'classifier__final_estimator__n_estimators': [100, 200, 300],
-            'classifier__final_estimator__max_depth': [20, 30, 40, None],
+            'classifier__final_estimator__max_depth': [20, 30, 40],
             'classifier__final_estimator__min_samples_leaf': [5, 10, 15],
             'classifier__final_estimator__max_features': ['sqrt'],
             'classifier__final_estimator__bootstrap': [False],
@@ -208,25 +208,7 @@ class ModelRegistry:
                 {0: 2, 1: 1},  # Emphasis on RandomForest
                ]  
         }
-        # param_grid = {
-        #     # Learning rate: Best was 0.01, exploring around this value
-        #     'classifier__final_estimator__learning_rate': [0.005, 0.01, 0.02],
-            
-        #     # Max depth: Best was 3, keeping focused range
-        #     'classifier__final_estimator__max_depth': [2, 3, 4],
-            
-        #     # L2 regularization: Best was 1.0, exploring around this value
-        #     'classifier__final_estimator__l2_regularization': [0.5, 1.0, 2.0],
-            
-        #     # Early stopping for robustness
-        #     'classifier__final_estimator__early_stopping': [True],
-        #     'classifier__final_estimator__n_iter_no_change': [10],
-        #     'classifier__final_estimator__validation_fraction': [0.1],
-        #     'classifier__weights': [[1, 1],    # Equal weights
-        #                 [2, 1],     # Emphasis on HistGradientBoosting
-        #                 [1, 2]]     # Emphasis on RandomForest
-        # }
-        
+       
         return ModelConfig(
             name='StackingClassifier',
             model=stacking_clf,
@@ -311,16 +293,4 @@ class ModelRegistry:
             description='A logistic regression model'
         )
 
-    # @staticmethod
-    # def get_gradient_boosting_config() -> ModelConfig:
-    #     """Get the configuration for a gradient boosting model"""
-    #     return ModelConfig(
-    #         name='Gradient Boosting',
-    #         model=GradientBoostingClassifier(),
-    #         param_grid={
-    #             'classifier__n_estimators': [100, 200, 300],
-    #             'classifier__max_depth': [3, 5, 7]
-    #         },
-    #         description='A gradient boosting model'
-    #     )
     

@@ -1,13 +1,13 @@
 import time
 from typing import Any, Dict, Tuple
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator
 import pandas as pd
-
+import optuna
 from experiment.experiment_config import ExperimentConfig
 
-class ModelTrainer:
+class ModelTrainerGridSearch:
     def __init__(self, config: ExperimentConfig):
         self.config = config
 
@@ -17,7 +17,7 @@ class ModelTrainer:
             ('preprocessor', preprocessor),
             ('classifier', model)
         ])
-    
+   
     def train_model(self, 
                    pipeline: Pipeline,
                    param_grid: Dict[str, Any],
