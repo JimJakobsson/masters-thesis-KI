@@ -55,15 +55,15 @@ class OptunaModelRegistry:
     def get_hist_gradient_boosting_config() -> ModelConfig:
         """Get the configuration for a histogram gradient boosting model"""
         param_grid = {
-            'learning_rate': (0.01, 0.5),
-            'max_depth': (3, 10),
-            'max_iter': (100, 300),
-            'min_samples_leaf': (10, 30),
-            'l2_regularization': (1.0, 20.0),
-            'max_bins': (200, 255),
-            'class_weight_ratio': (1.5, 2.5),
-            'validation_fraction': (0.1, 0.2),
-            'n_iter_no_change': (5, 15),
+            'learning_rate': (0.0001, 1.0),  
+            'max_depth': (2, 30),       
+            'max_iter': (100, 3000),  
+            'min_samples_leaf': (1, 100),  
+            'l2_regularization': (0.0, 50.0),  
+            'max_bins': (2, 255),  
+            # 'class_weight_ratio': (1.0, 10.0),  
+            'validation_fraction': (0.05, 0.35),  
+            'n_iter_no_change': (5, 50),  
             'early_stopping': [True],
             'random_state': [42]
         }
@@ -74,12 +74,14 @@ class OptunaModelRegistry:
                 'max_depth': trial.suggest_int('max_depth', *param_grid['max_depth']),
                 'max_iter': trial.suggest_int('max_iter', *param_grid['max_iter']),
                 'min_samples_leaf': trial.suggest_int('min_samples_leaf', *param_grid['min_samples_leaf']),
-                'l2_regularization': trial.suggest_float('l2_regularization', *param_grid['l2_regularization']),
+                'l2_regularization': trial.suggest_float('l2_regularization', *param_grid['l2_regularization'], log=True),
                 'max_bins': trial.suggest_int('max_bins', *param_grid['max_bins']),
                 'validation_fraction': trial.suggest_float('validation_fraction', *param_grid['validation_fraction']),
                 'n_iter_no_change': trial.suggest_int('n_iter_no_change', *param_grid['n_iter_no_change']),
                 'early_stopping': True,
-                'random_state': 42
+                'random_state': 42,
+                'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 2.0, 3.0)}
+
             }
             
             ratio = trial.suggest_float('class_weight_ratio', *param_grid['class_weight_ratio'])
