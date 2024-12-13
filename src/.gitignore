@@ -3,3 +3,4 @@ __pycache__
 outputs/*
 misc/*
 database/*
+legacy/ServerConnectionIPT1.py
