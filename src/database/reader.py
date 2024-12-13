@@ -57,10 +57,10 @@ class DatabaseReader:
             df = pd.read_sql_query(query, engine)
             print(f"Query executed successfully. DataFrame shape: {df.shape}")
 
-            if cache_path:
-                cache_path.parent.mkdir(parents=True, exist_ok=True)
-                df.to_csv(cache_path, index=False)
-                print(f"Results cached to file: {cache_path}")
+            # if cache_path:
+            #     cache_path.parent.mkdir(parents=True, exist_ok=True)
+            #     df.to_csv(cache_path, index=False)
+            #     print(f"Results cached to file: {cache_path}")
             return df
         except Exception as e:
             raise Exception(f"Failed to read joined tables: {str(e)}")

@@ -115,12 +115,12 @@ class Experiment:
         # Load and process data
         cache_path = Path("misc/combined_tables_ipt1.csv") 
         
-        raw_data = self.db_reader.read_ipt1_data(use_cache = True, cache_path=cache_path)
+        raw_data = self.db_reader.read_ipt1_data(use_cache = False, cache_path=cache_path)
         raw_data = self.data_handler.calculate_ages(raw_data)
         labeled_data = self.preprocessor.create_labels(raw_data)
         #Drop features age_death and age
         #REMOVE LATER
-        labeled_data = labeled_data.drop(columns=['age_death', 'age'])
+        # labeled_data = labeled_data.drop(columns=['age_death', 'age'])
 
         #Prepare data for training
         X, y = self.preprocessor.get_features_and_target(labeled_data)
