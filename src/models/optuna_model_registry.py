@@ -13,10 +13,10 @@ class OptunaModelRegistry:
         """Get the configuration for a random forest model"""
         param_grid = {
             'n_estimators': (60, 110),
-            'max_depth': (15, 40),
-            'min_samples_split': (2, 20),
-            'min_samples_leaf': (1, 10),
-            'ccp_alpha': (0.0001, 0.1),
+            'max_depth': (5, 40),
+            'min_samples_split': (5, 30),
+            'min_samples_leaf': (3, 15),
+            'ccp_alpha': (0.0001, 0.01),
             'bootstrap': [True, False],
             'max_features': ['sqrt', 'log2'],
             'criterion': ['entropy', 'gini'],
@@ -35,7 +35,7 @@ class OptunaModelRegistry:
                 'max_features': trial.suggest_categorical('max_features', param_grid['max_features']),
                 'criterion': trial.suggest_categorical('criterion', param_grid['criterion']),
                 'random_state': param_grid['random_state'],
-                'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 2.0, 3.0)}
+                'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 1.0, 3.0)}
             }
 
             # Convert to pipeline parameters by adding prefix
@@ -80,7 +80,7 @@ class OptunaModelRegistry:
                 'n_iter_no_change': trial.suggest_int('n_iter_no_change', *param_grid['n_iter_no_change']),
                 'early_stopping': True,
                 'random_state': 42,
-                'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 2.0, 3.0)}
+                'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 1.0, 3.0)}
 
             }
             
@@ -104,28 +104,28 @@ class OptunaModelRegistry:
         base_estimators = [
             ('hgb', HistGradientBoostingClassifier(
                 random_state=42, class_weight={0: 1, 1: 2},
-                early_stopping=True, l2_regularization=10.0,
-                learning_rate=0.3, max_bins=225, max_depth=6,
-                max_iter=100, min_samples_leaf=20,
-                n_iter_no_change=10, validation_fraction=0.1
+                early_stopping=True, l2_regularization=25.065867997544807,
+                learning_rate=0.4666024344469928, max_bins=56, max_depth=28,
+                max_iter=2908, min_samples_leaf=27,
+                n_iter_no_change=48, validation_fraction=0.13172302905106784
             )),
             ('rf', RandomForestClassifier(
-                random_state=42, bootstrap=False,
-                ccp_alpha=0.001, class_weight={0: 1, 1: 2.5},
-                criterion='entropy', max_depth=20,
-                max_features='sqrt', min_samples_leaf=1,
-                min_samples_split=12, n_estimators=100
+                random_state=42, bootstrap=True,
+                ccp_alpha=0.004986320557962982, class_weight={0: 1, 1: 2.5},
+                criterion='entropy', max_depth=15,
+                max_features='sqrt', min_samples_leaf=6,
+                min_samples_split=14, n_estimators=98
             ))
         ]
 
         param_grid = {
-            'final_estimator__n_estimators': (100, 300),
-            'final_estimator__max_depth': (20, 40),
-            'final_estimator__min_samples_leaf': (5, 15),
-            'final_estimator__min_samples_split': (5, 15),
-            'final_estimator__class_weight_ratio': (1.0, 2.0),
-            'final_estimator__max_features': ['sqrt'],
-            'final_estimator__bootstrap': [False]
+            'final_estimator__n_estimators': (100, 500),
+            'final_estimator__max_depth': (15, 40),
+            'final_estimator__min_samples_leaf': (2, 15),
+            'final_estimator__min_samples_split': (4, 15),
+            'final_estimator__class_weight': (1.5, 3.0),
+            'final_estimator__max_features': ['sqrt','log2'],
+            'final_estimator__bootstrap': [True, False]
         }
         
         def param_suggest(trial):

@@ -121,6 +121,7 @@ class Experiment:
         #Drop features age_death and age
         #REMOVE LATER
         # labeled_data = labeled_data.drop(columns=['age_death', 'age'])
+        labeled_data = labeled_data.drop(columns=['age'])
 
         #Prepare data for training
         X, y = self.preprocessor.get_features_and_target(labeled_data)
