@@ -43,7 +43,7 @@ class ModelTrainerOptuna:
                    param_grid: Dict[str, Any],
                    X: pd.DataFrame,
                    y: pd.Series,
-                   n_trials: int = 50) -> Any:
+                   n_trials: int = 10) -> Any:
         """Train model using Optuna for hyperparameter optimization"""
         
         def objective(trial):

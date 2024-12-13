@@ -12,14 +12,14 @@ class OptunaModelRegistry:
     def get_random_forest_config() -> ModelConfig:
         """Get the configuration for a random forest model"""
         param_grid = {
-            'n_estimators': (80, 100),
-            'max_depth': (20, 30),
-            'min_samples_split': (3, 12),
-            'min_samples_leaf': (1, 5),
+            'n_estimators': (60, 110),
+            'max_depth': (15, 40),
+            'min_samples_split': (2, 20),
+            'min_samples_leaf': (1, 10),
             'ccp_alpha': (0.0001, 0.1),
             'bootstrap': [True, False],
-            'max_features': ['sqrt'],
-            'criterion': ['entropy'],
+            'max_features': ['sqrt', 'log2'],
+            'criterion': ['entropy', 'gini'],
             'random_state': 42
         }
         
