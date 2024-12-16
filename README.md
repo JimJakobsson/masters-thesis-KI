@@ -2,6 +2,8 @@
 
 This project is a comprehensive machine learning pipeline designed for data preprocessing, model training, evaluation, and visualization. It includes various modules for handling data, training models, evaluating performance, and generating visualizations.
 
+The master's thesis is written at the Department of Medical Epidemiology and Biostatistics. It focuses on utilising machine learning techniques to analyze data from the Swedish Adoption/Twin Study of Aging (SATSA) cohort. The project involves creating predictive models that combine biomarkers, health variables, and environmental factors to evaluate mortality risk. The goal is to identify determinants of mortality, which could guide strategies to alleviate the negative impacts of aging. This research aims to derive valuable insights from the longitudinal data to improve understanding of aging processes and associated mortality risks.
+
 ## Usage
 
 If access to data is configured, run the main script to start the experiment.
