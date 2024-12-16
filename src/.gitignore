@@ -1,6 +1,6 @@
 __pycache__
-*.pdf
-outputs/*
+# *.pdf
+# outputs/*
 misc/*
-database/*
-legacy/ServerConnectionIPT1.py
+# database/*
+# legacy/ServerConnectionIPT1.py

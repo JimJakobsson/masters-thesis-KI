@@ -1,0 +1,25 @@
+2024-12-13 14:30:09,821 - INFO - 
+Available Models:
+2024-12-13 14:30:09,821 - INFO - - stacking: Stacking classifier with Optuna parameter suggestions
+2024-12-13 14:30:09,821 - INFO - 
+Starting experiments...
+2024-12-13 14:30:09,822 - INFO - 
+Starting experiment with stacking
+2024-12-13 14:30:10,169 - ERROR - Error in stacking experiment: No trials are completed yet.
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/Master-Thesis/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/Master-Thesis/src/experiment/experiment.py", line 137, in run
+    grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
+  File "/nfs/home/jimjak/Master-Thesis/src/experiment/model_trainer_optuna.py", line 105, in train_model
+    print(f"Best parameters: {study.best_params}")
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/study.py", line 119, in best_params
+    return self.best_trial.params
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/study.py", line 162, in best_trial
+    best_trial = self._storage.get_best_trial(self._study_id)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/storages/_in_memory.py", line 249, in get_best_trial
+    raise ValueError("No trials are completed yet.")
+ValueError: No trials are completed yet.
+2024-12-13 14:30:10,193 - INFO - All experiments completed successfully
+2024-12-13 14:30:10,193 - INFO - 
+Results and log file saved in: outputs/20241213_143009

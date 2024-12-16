@@ -1,0 +1,11 @@
+2024-12-13 13:49:56,628 - INFO - 
+Available Models:
+2024-12-13 13:49:56,629 - INFO - - random_forest: Random forest model with Optuna parameter suggestions
+2024-12-13 13:49:56,629 - INFO - 
+Starting experiments...
+2024-12-13 13:49:56,629 - INFO - 
+Starting experiment with random_forest
+2024-12-13 13:52:06,006 - INFO - Completed experiment with random_forest
+2024-12-13 13:52:06,007 - INFO - All experiments completed successfully
+2024-12-13 13:52:06,007 - INFO - 
+Results and log file saved in: outputs/20241213_134956

@@ -1,0 +1,15 @@
+2024-12-12 21:53:37,422 - INFO - 
+Available Models:
+2024-12-12 21:53:37,422 - INFO - - random_forest: Random forest model with Optuna parameter suggestions
+2024-12-12 21:53:37,422 - INFO - - hist_gradient_boosting: Histogram gradient boosting model with Optuna parameter suggestions
+2024-12-12 21:53:37,422 - INFO - 
+Starting experiments...
+2024-12-12 21:53:37,422 - INFO - 
+Starting experiment with random_forest
+2024-12-12 22:11:19,286 - INFO - Completed experiment with random_forest
+2024-12-12 22:11:19,286 - INFO - 
+Starting experiment with hist_gradient_boosting
+2024-12-12 23:08:32,626 - INFO - Completed experiment with hist_gradient_boosting
+2024-12-12 23:08:32,627 - INFO - All experiments completed successfully
+2024-12-12 23:08:32,627 - INFO - 
+Results and log file saved in: outputs/20241212_215337
