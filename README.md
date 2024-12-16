@@ -51,3 +51,8 @@ Generates visualizations for model evaluation and feature importance.
 - `feature_importance_plotter.py`: Plots feature importance.
 - `shap_plots.py`: Plots SHAP summary and waterfall plots.
 
+### Outputs
+
+See the result of the training of specified model(s). One directory for each expermiment, named with the date and time it was started.
+One subdirectory for each machine learning model tested.
+
