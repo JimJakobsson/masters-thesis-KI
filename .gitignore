@@ -1,0 +1,9 @@
+__pycache__
+# *.pdf
+# outputs/*
+# misc/*
+src/database/connection.py
+src/database/database_config.py
+src/database/IPT1_reader.py
+src/database/IPT2_reader.py
+src/legacy/ServerConnectionIPT1.py
