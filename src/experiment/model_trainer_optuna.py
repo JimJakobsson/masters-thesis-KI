@@ -44,9 +44,12 @@ class ModelTrainerOptuna:
                    param_grid: Dict[str, Any],
                    X: pd.DataFrame,
                    y: pd.Series,
-                   n_trials: int = 1) -> Any:
+                   n_trials: int = 10) -> Any:
         """Train model using Optuna for hyperparameter optimization"""
-        
+
+        #Number of trials from the confguration
+        n_trials = self.config.n_trials_optuna
+
         def objective(trial):
             try:
                 # Get base model class

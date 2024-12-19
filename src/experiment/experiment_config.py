@@ -15,3 +15,4 @@ class ExperimentConfig:
     test_size: float = 0.2
     random_state: int = 42
     cv_folds: int = 5
+    n_trials_optuna: int = 200
