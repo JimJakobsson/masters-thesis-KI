@@ -116,6 +116,9 @@ class ModelEvaluator(BaseEvaluator):
         # Transform the test data using the pipeline's preprocessor
         X_test_transformed = column_transformer.transform(X_test)
 
+        # sample_size = min(50, X_test_transformed.shape[0])
+        # X_test_sample = X_test_transformed[:sample_size]
+
         #Create explainer using just the classifier
         self.explainer = self._create_explainer(best_model, X_test_transformed)
         self.shap_values = self.explainer.shap_values(X_test_transformed, silent=False)
