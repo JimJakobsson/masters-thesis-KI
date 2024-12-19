@@ -1,6 +1,7 @@
 import optuna
 import time
 from typing import Any, Dict, Tuple
+from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 import pandas as pd
@@ -43,22 +44,47 @@ class ModelTrainerOptuna:
                    param_grid: Dict[str, Any],
                    X: pd.DataFrame,
                    y: pd.Series,
-                   n_trials: int = 10) -> Any:
+                   n_trials: int = 1) -> Any:
         """Train model using Optuna for hyperparameter optimization"""
         
         def objective(trial):
             try:
                 # Get base model class
                 model_class = pipeline.named_steps['classifier'].__class__
-                
-                # Suggest parameters
-                params = {}
-                for param_name, param_range in param_grid.items():
-                    clean_name = param_name.replace('classifier__', '')
-                    params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
-                
-                # Create new model instance with suggested parameters
-                model = model_class(**params)
+                # Special handling for StackingClassifier
+                if isinstance(pipeline.named_steps['classifier'], StackingClassifier):
+                    # Get base configuration
+                    base_config = {
+                        'estimators': pipeline.named_steps['classifier'].estimators,
+                        'stack_method': pipeline.named_steps['classifier'].stack_method,
+                    }
+                    
+                    # Create parameters for final estimator
+                    final_estimator_params = {}
+                    for param_name, param_range in param_grid.items():
+                        # Remove 'classifier__' prefix if it exists
+                        clean_name = param_name.replace('classifier__', '')
+                        # Remove 'final_estimator__' prefix and use as parameter name
+                        param_key = clean_name.replace('final_estimator__', '')
+                        final_estimator_params[param_key] = self.suggest_parameter(
+                            trial, param_key, param_range
+                        )
+                    
+                    # Create new final estimator
+                    final_estimator = RandomForestClassifier(**final_estimator_params)
+                    base_config['final_estimator'] = final_estimator
+                    
+                    # Create new model instance
+                    model = model_class(**base_config)
+                else:
+                    # Suggest parameters
+                    params = {}
+                    for param_name, param_range in param_grid.items():
+                        clean_name = param_name.replace('classifier__', '')
+                        params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
+                    
+                    # Create new model instance with suggested parameters
+                    model = model_class(**params)
                 
                 # Create and evaluate pipeline
                 trial_pipeline = Pipeline([
@@ -105,9 +131,30 @@ class ModelTrainerOptuna:
         print(f"Best parameters: {study.best_params}")
         print(f"Best score: {study.best_value:.4f}")
 
-        # Create final model with best parameters
-        best_params = {k.replace('classifier__', ''): v for k, v in study.best_params.items()}
-        final_model = pipeline.named_steps['classifier'].__class__(**best_params)
+        #Create final model with the best parameters
+        if isinstance(pipeline.named_steps['classifier'], StackingClassifier):
+            # Get base configuration for stacking classifier
+            base_config = {
+                'estimators': pipeline.named_steps['classifier'].estimators,
+                'stack_method': pipeline.named_steps['classifier'].stack_method,
+            }
+            
+            # Create parameters for final estimator
+            final_estimator_params = {}
+            for param_name, value in study.best_params.items():
+                # Remove 'final_estimator__' prefix
+                param_key = param_name.replace('final_estimator__', '')
+                final_estimator_params[param_key] = value
+            
+            # Create final estimator with best parameters
+            final_estimator = RandomForestClassifier(**final_estimator_params)
+            base_config['final_estimator'] = final_estimator
+            
+            # Create final stacking classifier
+            final_model = pipeline.named_steps['classifier'].__class__(**base_config)
+        else:
+            best_params = {k.replace('classifier__', ''): v for k, v in study.best_params.items()}
+            final_model = pipeline.named_steps['classifier'].__class__(**best_params)
         
         final_pipeline = Pipeline([
             ('preprocessor', pipeline.named_steps['preprocessor']),

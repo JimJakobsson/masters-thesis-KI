@@ -114,13 +114,11 @@ class ModelEvaluator(BaseEvaluator):
         # Get the column transformer from the pipeline
         column_transformer = best_model.named_steps['preprocessor']
         # Transform the test data using the pipeline's preprocessor
-        print("Shape before transform:", X_test.shape)
         X_test_transformed = column_transformer.transform(X_test)
-        print("Shape after transform:", X_test_transformed.shape)
 
         #Create explainer using just the classifier
         self.explainer = self._create_explainer(best_model, X_test_transformed)
-        self.shap_values = self.explainer.shap_values(X_test_transformed)
+        self.shap_values = self.explainer.shap_values(X_test_transformed, silent=False)
         
         # Get feature names after preprocessing
         preprocessed_feature_names = self.get_feature_names_after_preprocessing(best_model)
@@ -225,8 +223,9 @@ class ModelEvaluator(BaseEvaluator):
         """Create appropriate SHAP explainer based on model type"""
         classifier = model.named_steps['classifier']
         model_name = classifier.__class__.__name__
+        print("before background summary")
         background_summary = pd.DataFrame(data).sample(n=100, random_state=42)
-
+        print("after background summary")
         try:
             if model_name in ModelConfig.TREE_BASED_MODELS:
                 print("Tree explainer created")
@@ -242,7 +241,7 @@ class ModelEvaluator(BaseEvaluator):
                 if data is None:
                     raise ValueError("Background data required for KernelExplainer")
                 print("Kernel explainer created")
-                return shap.KernelExplainer(classifier.predict_proba, background_summary)
+                return shap.KernelExplainer(classifier.predict_proba, background_summary, silent=False)
             else:
                 raise ValueError(f"Unsupported model type: {model_name}")
         except Exception as e:

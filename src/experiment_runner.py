@@ -29,7 +29,7 @@ class ExperimentRunner:
         """Configure logging with both file and console output"""
         logging_path = os.path.join(self.output_dir, 'experiment.log')
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.WARNING,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
                 logging.FileHandler(logging_path),

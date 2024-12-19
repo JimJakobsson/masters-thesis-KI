@@ -2,6 +2,7 @@ from sklearn.ensemble import (
     RandomForestClassifier, HistGradientBoostingClassifier,
     BaggingClassifier, StackingClassifier, VotingClassifier
 )
+from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 from models.model_config import ModelConfig
 
@@ -96,7 +97,7 @@ class OptunaModelRegistry:
             param_suggest=param_suggest,
             description='Histogram gradient boosting model with Optuna parameter suggestions'
         )
-
+    
     @staticmethod
     def get_stacking_config() -> ModelConfig:
         """Get the configuration for a stacking classifier"""
@@ -118,40 +119,106 @@ class OptunaModelRegistry:
             ))
         ]
 
+        # Create initial stacking classifier
+        base_model = StackingClassifier(
+            estimators=base_estimators,
+            final_estimator=RandomForestClassifier(random_state=42),
+            stack_method='predict_proba'
+        )
+        
+        # Define parameter ranges for final estimator
         param_grid = {
-            'final_estimator__n_estimators': (100, 500),
-            'final_estimator__max_depth': (15, 40),
-            'final_estimator__min_samples_leaf': (2, 15),
-            'final_estimator__min_samples_split': (4, 15),
-            'final_estimator__class_weight': (1.5, 3.0),
-            'final_estimator__max_features': ['sqrt','log2'],
-            'final_estimator__bootstrap': [True, False]
+            'final_estimator__n_estimators': (60, 110),
+            'final_estimator__max_depth': (5, 40),
+            'final_estimator__min_samples_split': (5, 30),
+            'final_estimator__min_samples_leaf': (3, 15),
+            'final_estimator__ccp_alpha': (0.0001, 0.01),
+            'final_estimator__bootstrap': [True, False],
+            'final_estimator__max_features': ['sqrt', 'log2'],
+            'final_estimator__criterion': ['entropy', 'gini'],
+            'final_estimator__random_state': [42]
         }
         
-        def param_suggest(trial):
-            params = {
-                'estimators': base_estimators,
-                'final_estimator': RandomForestClassifier(
-                    n_estimators=trial.suggest_int('final_estimator__n_estimators', *param_grid['final_estimator__n_estimators']),
-                    max_depth=trial.suggest_int('final_estimator__max_depth', *param_grid['final_estimator__max_depth']),
-                    min_samples_leaf=trial.suggest_int('final_estimator__min_samples_leaf', *param_grid['final_estimator__min_samples_leaf']),
-                    min_samples_split=trial.suggest_int('final_estimator__min_samples_split', *param_grid['final_estimator__min_samples_split']),
-                    max_features=trial.suggest_categorical('final_estimator__max_features', param_grid['final_estimator__max_features']),
-                    bootstrap=trial.suggest_categorical('final_estimator__bootstrap', param_grid['final_estimator__bootstrap']),
-                    random_state=42
-                ),
-                'stack_method': 'predict_proba'
-            }
-            
-            ratio = trial.suggest_float('final_estimator__class_weight_ratio', *param_grid['final_estimator__class_weight_ratio'])
-            params['final_estimator'].class_weight = {0: 1, 1: ratio}
-            
-            return params
-
         return ModelConfig(
             name='StackingClassifier',
-            model=StackingClassifier(estimators=base_estimators, final_estimator=RandomForestClassifier()),
+            model=base_model,
             param_grid=param_grid,
-            param_suggest=param_suggest,
-            description='Stacking classifier with Optuna parameter suggestions'
+            param_suggest=None,  # We don't need param_suggest anymore
+            description='Stacking classifier with Optuna parameter suggestions for final estimator'
         )
+
+
+
+
+
+
+    # @staticmethod
+    # def get_stacking_config() -> ModelConfig:
+    #     """Get the configuration for a stacking classifier"""
+    #     # Base estimators are fixed with optimal configurations
+    #     base_estimators = [
+    #         ('hgb', HistGradientBoostingClassifier(
+    #             random_state=42, class_weight={0: 1, 1: 2},
+    #             early_stopping=True, l2_regularization=25.065867997544807,
+    #             learning_rate=0.4666024344469928, max_bins=56, max_depth=28,
+    #             max_iter=2908, min_samples_leaf=27,
+    #             n_iter_no_change=48, validation_fraction=0.13172302905106784
+    #         )),
+    #         ('rf', RandomForestClassifier(
+    #             random_state=42, bootstrap=True,
+    #             ccp_alpha=0.004986320557962982, class_weight={0: 1, 1: 2.5},
+    #             criterion='entropy', max_depth=15,
+    #             max_features='sqrt', min_samples_leaf=6,
+    #             min_samples_split=14, n_estimators=98
+    #         ))
+    #     ]
+
+    #     # Define base model (will be modified during optimization)
+    #     base_model = StackingClassifier(
+    #         estimators=base_estimators,
+    #         final_estimator=RandomForestClassifier(random_state=42),
+    #         stack_method='predict_proba'
+    #     )
+        
+    #     # Define parameter ranges for final estimator only
+    #     param_grid = {
+    #         'n_estimators': (60, 110),
+    #         'max_depth': (5, 40),
+    #         'min_samples_split': (5, 30),
+    #         'min_samples_leaf': (3, 15),
+    #         'ccp_alpha': (0.0001, 0.01),
+    #         'bootstrap': [True, False],
+    #         'max_features': ['sqrt', 'log2'],
+    #         'criterion': ['entropy', 'gini'],
+    #         'random_state': [42]
+    #     }
+        
+    #     def param_suggest(trial):
+    #         # Create parameters for the final estimator
+    #         params = {
+    #             'n_estimators': trial.suggest_int('n_estimators', *param_grid['n_estimators']),
+    #             'max_depth': trial.suggest_int('max_depth', *param_grid['max_depth']),
+    #             'min_samples_split': trial.suggest_int('min_samples_split', *param_grid['min_samples_split']),
+    #             'min_samples_leaf': trial.suggest_int('min_samples_leaf', *param_grid['min_samples_leaf']),
+    #             'ccp_alpha': trial.suggest_float('ccp_alpha', *param_grid['ccp_alpha']),
+    #             'bootstrap': trial.suggest_categorical('bootstrap', param_grid['bootstrap']),
+    #             'max_features': trial.suggest_categorical('max_features', param_grid['max_features']),
+    #             'criterion': trial.suggest_categorical('criterion', param_grid['criterion']),
+    #             'random_state': param_grid['random_state'],
+    #             'class_weight': {0: 1, 1: trial.suggest_float('class_weight_ratio', 1.0, 3.0)}
+    #         }
+            
+    #         # Create a new StackingClassifier with the suggested parameters for final_estimator
+    #         return {
+    #             'estimators': base_estimators,
+    #             'final_estimator': RandomForestClassifier(**params),
+    #             'stack_method': 'predict_proba'
+    #         }
+
+    #     return ModelConfig(
+    #         name='StackingClassifier',
+    #         model=base_model,
+    #         param_grid=param_grid,
+    #         param_suggest=param_suggest,
+    #         description='Stacking classifier with Optuna parameter suggestions'
+    #     )
