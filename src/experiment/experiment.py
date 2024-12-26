@@ -137,7 +137,7 @@ class Experiment:
         grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
 
         result = self.evaluator.evaluate_model(
-            grid_search, X_test, y_test, threshold=0.4)
+            grid_search, X_test, y_test, self.config.threshold)
         
         classification_report = result['classification_report']
         best_params = result['best_params']

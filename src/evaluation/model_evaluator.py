@@ -40,9 +40,11 @@ class ModelEvaluator(BaseEvaluator):
         self.metrics = Metrics()   
     
     def evaluate_model(self, grid_search: BaseEstimator, X_test: pd.DataFrame, 
-                      y_test: pd.Series, threshold: float = 0.4) -> Dict[str, Any]:
+                      y_test: pd.Series, threshold: float = 0.7) -> Dict[str, Any]:
         """Evaluate model performance using classification metrics"""
+        
         y_prob = grid_search.predict_proba(X_test)[:, 1]
+        print(f"Threshold: {threshold}")
         y_pred = (y_prob > threshold).astype(int)
         y_test = y_test.astype(int)
         
@@ -116,12 +118,20 @@ class ModelEvaluator(BaseEvaluator):
         # Transform the test data using the pipeline's preprocessor
         X_test_transformed = column_transformer.transform(X_test)
 
-        # sample_size = min(50, X_test_transformed.shape[0])
-        # X_test_sample = X_test_transformed[:sample_size]
-
         #Create explainer using just the classifier
         self.explainer = self._create_explainer(best_model, X_test_transformed)
-        self.shap_values = self.explainer.shap_values(X_test_transformed, silent=False)
+
+        #check if explainer is KernelExplainer
+
+        if isinstance(self.explainer, shap.KernelExplainer):
+            self.shap_values = self.explainer.shap_values(X_test_transformed, silent=True)
+        else:
+            self.shap_values = self.explainer.shap_values(X_test_transformed)
+
+        # if isinstance(best_model, ModelConfig.KERNEL_EXPLAINER_MODELS):
+        #     self.shap_values = self.explainer.shap_values(X_test_transformed, silent=True)
+        # else:
+        #     self.shap_values = self.explainer.shap_values(X_test_transformed)
         
         # Get feature names after preprocessing
         preprocessed_feature_names = self.get_feature_names_after_preprocessing(best_model)
@@ -221,34 +231,130 @@ class ModelEvaluator(BaseEvaluator):
         
         return aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean 
      
-    def _create_explainer(self, model: BaseEstimator, 
-                         data: Optional[np.ndarray] = None) -> Any:
-        """Create appropriate SHAP explainer based on model type"""
+
+
+    def _create_explainer(self, model: BaseEstimator,
+                    data: Optional[np.ndarray] = None) -> Any:
+        """Create appropriate SHAP explainer based on model type
+        
+        This function creates SHAP explainers optimized for maximum data usage.
+        Different explainer types handle background data differently:
+        - TreeExplainer: Can efficiently handle all data points
+        - DeepExplainer: Needs to compute background values, so we use chunking
+        - LinearExplainer: Can handle large datasets efficiently
+        - KernelExplainer: Most computationally intensive, requires careful data handling
+        
+        Args:
+            model: Trained sklearn pipeline containing a classifier
+            data: Background data for explainer initialization
+            
+        Returns:
+            SHAP explainer instance appropriate for the model type
+        """
         classifier = model.named_steps['classifier']
         model_name = classifier.__class__.__name__
-        print("before background summary")
-        background_summary = pd.DataFrame(data).sample(n=100, random_state=42)
-        print("after background summary")
+
+        def prepare_background_data(data: np.ndarray, 
+                                explainer_type: str) -> np.ndarray:
+            """Prepare background data optimized for each explainer type
+            
+            Different explainers have different computational characteristics:
+            - TreeExplainer: O(n_samples)
+            - LinearExplainer: O(n_samples)
+            - DeepExplainer: O(n_samples * n_features)
+            - KernelExplainer: O(n_samples^2 * n_features)
+            """
+            if data is None:
+                raise ValueError("Background data required for explainer")
+                
+            # For tree and linear models, we can use all data
+            if explainer_type in ['tree', 'linear']:
+                return data
+                
+            # For deep learning models, chunk data if it's too large
+            elif explainer_type == 'deep':
+                max_deep_samples = 10000  # Adjust based on available memory
+                if len(data) > max_deep_samples:
+                    # Use systematic sampling to maintain distribution
+                    step = len(data) // max_deep_samples
+                    return data[::step]
+                return data
+                
+            # For kernel explainer, we need to be more selective
+            elif explainer_type == 'kernel':
+                # Use progressive sampling to find optimal sample size
+                from sklearn.model_selection import train_test_split
+                
+                max_kernel_samples = 100 # Adjust based on available memory
+                if len(data) <= max_kernel_samples:
+                    return data
+                    
+                # Take a larger sample first, then subsample if needed
+                background, _ = train_test_split(
+                    data,
+                    train_size=max_kernel_samples,
+                    stratify=classifier.predict(data) if hasattr(classifier, 'predict') else None,
+                    random_state=42
+                )
+                return background
+
         try:
             if model_name in ModelConfig.TREE_BASED_MODELS:
-                print("Tree explainer created")
+                print("Creating Tree explainer with full dataset")
+                # Tree-based models can efficiently handle the full dataset
                 return shap.TreeExplainer(classifier)
+                
             elif model_name in ModelConfig.DEEP_LEARNING_MODELS:
-                if data is None:
-                    raise ValueError("Background data required for DeepExplainer")
-                return shap.DeepExplainer(model, background_summary)
+                background = prepare_background_data(data, 'deep')
+                print(f"Creating Deep explainer with {len(background)} background samples")
+                return shap.DeepExplainer(model, background)
+                
             elif model_name in ModelConfig.LINEAR_MODELS:
-                print("Linear explainer created")
-                return shap.LinearExplainer(model, background_summary)
+                background = prepare_background_data(data, 'linear')
+                print(f"Creating Linear explainer with {len(background)} background samples")
+                return shap.LinearExplainer(model, background)
+                
             elif model_name in ModelConfig.KERNEL_EXPLAINER_MODELS:
-                if data is None:
-                    raise ValueError("Background data required for KernelExplainer")
-                print("Kernel explainer created")
-                return shap.KernelExplainer(classifier.predict_proba, background_summary, silent=False)
+                background = prepare_background_data(data, 'kernel')
+                print(f"Creating Kernel explainer with {len(background)} background samples")
+                return shap.KernelExplainer(
+                    classifier.predict_proba,
+                    background,
+                    silent=False
+                )
+                
             else:
                 raise ValueError(f"Unsupported model type: {model_name}")
+                
         except Exception as e:
             raise Exception(f"Error creating SHAP explainer: {str(e)}")
+    # def _create_explainer(self, model: BaseEstimator, 
+    #                      data: Optional[np.ndarray] = None) -> Any:
+    #     """Create appropriate SHAP explainer based on model type"""
+    #     classifier = model.named_steps['classifier']
+    #     model_name = classifier.__class__.__name__
+    #     # background_summary = pd.DataFrame(data).sample(n=100, random_state=42)
+    #     background_summary = data
+    #     try:
+    #         if model_name in ModelConfig.TREE_BASED_MODELS:
+    #             print("Tree explainer created")
+    #             return shap.TreeExplainer(classifier)
+    #         elif model_name in ModelConfig.DEEP_LEARNING_MODELS:
+    #             if data is None:
+    #                 raise ValueError("Background data required for DeepExplainer")
+    #             return shap.DeepExplainer(model, background_summary)
+    #         elif model_name in ModelConfig.LINEAR_MODELS:
+    #             print("Linear explainer created")
+    #             return shap.LinearExplainer(model, background_summary)
+    #         elif model_name in ModelConfig.KERNEL_EXPLAINER_MODELS:
+    #             if data is None:
+    #                 raise ValueError("Background data required for KernelExplainer")
+    #             print("Kernel explainer created")
+    #             return shap.KernelExplainer(classifier.predict_proba, background_summary, silent=False)
+    #         else:
+    #             raise ValueError(f"Unsupported model type: {model_name}")
+    #     except Exception as e:
+    #         raise Exception(f"Error creating SHAP explainer: {str(e)}")
         
     def plot_all(self, model: BaseEstimator, 
                  X_train: pd.DataFrame, X_test: pd.DataFrame,

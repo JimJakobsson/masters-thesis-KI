@@ -16,6 +16,7 @@ class FeatureImportancePlotter(BasePlotter):
         """Plot feature importance"""
      
         feature_importance = feature_importance.head(num_features)
+        feature_importance = feature_importance.iloc[::-1]  # Inverse the order of the items
         plt.figure(figsize=self.config.FIGURE_SIZES['feature'], 
                   dpi=self.config.DPI)
        

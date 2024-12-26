@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import logging
+import subprocess
 import sys
 from typing import Dict, Any
 
@@ -24,6 +25,8 @@ class Main:
         """Entry point for the experiment runner"""
 
         try:
+            subprocess.run('module load mebauth', shell=True, capture_output=True, text=True)
+
             runner = ExperimentRunner()
             runner.run_experiments()
         except Exception as e:

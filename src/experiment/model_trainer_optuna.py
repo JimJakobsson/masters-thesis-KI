@@ -85,9 +85,22 @@ class ModelTrainerOptuna:
                     for param_name, param_range in param_grid.items():
                         clean_name = param_name.replace('classifier__', '')
                         params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
-                    
-                    # Create new model instance with suggested parameters
-                    model = model_class(**params)
+                     # Separately handle class weight optimization
+
+                #  # Suggest just the weight value for class 1
+                # class_1_weight = self.suggest_parameter(
+                #     trial,
+                #     'class_weight_ratio',  # Using a different name to avoid confusion
+                #     [1.0, 2.0, 2.5, 3.0, 3.5, 4.0]  # Possible weight values for class 1
+                # )
+                
+                # # Construct the class_weight dictionary after getting the suggested value
+                # params['class_weight'] = {
+                #     0: 1.0,  # Fixed weight for class 0
+                #     1: class_1_weight  # Suggested weight for class 1
+                # }
+                # Create new model instance with suggested parameters
+                model = model_class(**params)
                 
                 # Create and evaluate pipeline
                 trial_pipeline = Pipeline([
@@ -130,10 +143,14 @@ class ModelTrainerOptuna:
         if len(study.trials) == 0:
             raise ValueError("No successful trials completed. Check parameter ranges and model configuration.")
 
+        
+
         print(f"\nOptimization completed in {time_end - time_start:.2f} seconds")
         print(f"Best parameters: {study.best_params}")
-        print(f"Best score: {study.best_value:.4f}")
+        #print all parameters and their values, not just from the best trial
 
+        print(f"Best score: {study.best_value:.4f}")
+        
         #Create final model with the best parameters
         if isinstance(pipeline.named_steps['classifier'], StackingClassifier):
             # Get base configuration for stacking classifier
@@ -145,6 +162,7 @@ class ModelTrainerOptuna:
             # Create parameters for final estimator
             final_estimator_params = {}
             for param_name, value in study.best_params.items():
+
                 # Remove 'final_estimator__' prefix
                 param_key = param_name.replace('final_estimator__', '')
                 final_estimator_params[param_key] = value
@@ -157,6 +175,7 @@ class ModelTrainerOptuna:
             final_model = pipeline.named_steps['classifier'].__class__(**base_config)
         else:
             best_params = {k.replace('classifier__', ''): v for k, v in study.best_params.items()}
+            print(f"new_best_params", best_params)
             final_model = pipeline.named_steps['classifier'].__class__(**best_params)
         
         final_pipeline = Pipeline([

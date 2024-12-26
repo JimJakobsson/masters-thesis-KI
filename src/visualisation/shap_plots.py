@@ -58,6 +58,11 @@ class ShapPlotter(BasePlotter):
             # Fall back to using the single value
             base_value = float(explainer.expected_value)
 
+        #if 'birthdate1' in features, display only the first four digits of the birthdate
+        #to avoid cluttering the plot with the full date and to protect privacy
+        if 'birthdate1' in features:
+            data[features.index('birthdate1')] = str(data[features.index('birthdate1')])[:4]
+
         explanation = shap.Explanation(
             values=values,
             base_values=base_value,
