@@ -114,18 +114,36 @@ class OptunaModelRegistry:
         # Base estimators are fixed with optimal configurations
         base_estimators = [
             ('hgb', HistGradientBoostingClassifier(
-                random_state=42, class_weight={0: 1, 1: 2},
-                early_stopping=True, l2_regularization=25.065867997544807,
-                learning_rate=0.4666024344469928, max_bins=56, max_depth=28,
-                max_iter=2908, min_samples_leaf=27,
-                n_iter_no_change=48, validation_fraction=0.13172302905106784
+            class_weight={0: 1, 1: 1},
+            early_stopping=True,
+            l2_regularization=2.294280717958801,
+            learning_rate=0.23040698858775321,
+            max_bins=115,
+            max_depth=12,
+            max_iter=11,
+            max_leaf_nodes=33,
+            min_samples_leaf=81,
+            n_iter_no_change=17,
+            tol=0.030672753967226428,
+            validation_fraction=0.8821528541761128,
+            random_state=42,
             )),
             ('rf', RandomForestClassifier(
-                random_state=42, bootstrap=True,
-                ccp_alpha=0.004986320557962982, class_weight={0: 1, 1: 2.5},
-                criterion='entropy', max_depth=15,
-                max_features='sqrt', min_samples_leaf=6,
-                min_samples_split=14, n_estimators=98
+            bootstrap=True,
+            ccp_alpha= 0.004681320432681322,
+            class_weight={0: 1, 1: 1},
+            criterion='entropy',
+            max_depth=46,
+            max_features='sqrt',
+            max_leaf_nodes=30,
+            max_samples=0.4343415014797324,
+            min_impurity_decrease= 0.022289899203164085,
+            min_samples_leaf=1,
+            min_samples_split=25,
+            min_weight_fraction_leaf=0.001594042722389311,
+            n_estimators=84,
+            oob_score=False,
+            random_state=42
             ))
         ]
 
@@ -138,21 +156,39 @@ class OptunaModelRegistry:
         
         # Define parameter ranges for final estimator
         param_grid = {
-            'final_estimator__n_estimators': (60, 110),
-            'final_estimator__max_depth': (5, 40),
-            'final_estimator__min_samples_split': (5, 30),
-            'final_estimator__min_samples_leaf': (3, 15),
+            'final_estimator__bootstrap': [True],
             'final_estimator__ccp_alpha': (0.0001, 0.01),
-            'final_estimator__bootstrap': [True, False],
-            'final_estimator__max_features': ['sqrt', 'log2'],
             'final_estimator__criterion': ['entropy', 'gini'],
+            'final_estimator__max_depth': (5, 60),
+            'final_estimator__max_features': ['sqrt', 'log2'],
+            'final_estimator__max_leaf_nodes': (10, 60),
+            'final_estimator__min_impurity_decrease': (0.0, 0.1),
+            'final_estimator__min_samples_leaf': (3, 20),
+            'final_estimator__min_samples_split': (5, 40),
+            'final_estimator__n_estimators': (60, 200),
             'final_estimator__random_state': [42]
         }
+
+        def param_suggest(trial):
+            params = {
+            'final_estimator__bootstrap': trial.suggest_categorical('final_estimator__bootstrap', param_grid['final_estimator__bootstrap']),
+            'final_estimator__ccp_alpha': trial.suggest_float('final_estimator__ccp_alpha', param_grid['final_estimator__ccp_alpha'][0], param_grid['final_estimator__ccp_alpha'][1]),
+            'final_estimator__criterion': trial.suggest_categorical('final_estimator__criterion', param_grid['final_estimator__criterion']),
+            'final_estimator__max_depth': trial.suggest_int('final_estimator__max_depth', param_grid['final_estimator__max_depth'][0], param_grid['final_estimator__max_depth'][1]),
+            'final_estimator__max_features': trial.suggest_categorical('final_estimator__max_features', param_grid['final_estimator__max_features']),
+            'final_estimator__max_leaf_nodes': trial.suggest_int('final_estimator__max_leaf_nodes', param_grid['final_estimator__max_leaf_nodes'][0], param_grid['final_estimator__max_leaf_nodes'][1]),
+            'final_estimator__min_impurity_decrease': trial.suggest_float('final_estimator__min_impurity_decrease', param_grid['final_estimator__min_impurity_decrease'][0], param_grid['final_estimator__min_impurity_decrease'][1]),
+            'final_estimator__min_samples_leaf': trial.suggest_int('final_estimator__min_samples_leaf', param_grid['final_estimator__min_samples_leaf'][0], param_grid['final_estimator__min_samples_leaf'][1]),
+            'final_estimator__min_samples_split': trial.suggest_int('final_estimator__min_samples_split', param_grid['final_estimator__min_samples_split'][0], param_grid['final_estimator__min_samples_split'][1]),
+            'final_estimator__n_estimators': trial.suggest_int('final_estimator__n_estimators', param_grid['final_estimator__n_estimators'][0], param_grid['final_estimator__n_estimators'][1]),
+            'final_estimator__random_state': param_grid['final_estimator__random_state'][0],
+            }
+            return params
         
         return ModelConfig(
-            name='StackingClassifier',
+            name='Stacking Classifier',
             model=base_model,
             param_grid=param_grid,
-            param_suggest=None,  # We don't need param_suggest anymore
+            param_suggest=param_suggest,
             description='Stacking classifier with Optuna parameter suggestions for final estimator'
         )
