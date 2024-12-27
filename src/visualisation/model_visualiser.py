@@ -2,8 +2,10 @@ from pathlib import Path
 from typing import Any, Dict
 import pandas as pd
 
+from visualisation.auc_plotter import AUCPlotter
 from visualisation.feature_importance_plotter import FeatureImportancePlotter
 from visualisation.learning_curve import LearningCurvePlotter
+from visualisation.roc_plotter import ROCPlotter
 from visualisation.shap_plots import ShapPlotter
 
 class ModelVisualiser:
@@ -14,6 +16,8 @@ class ModelVisualiser:
         self.feature_plotter = FeatureImportancePlotter(output_dir)
         self.shap_plotter = ShapPlotter(output_dir)
         self.learning_plotter = LearningCurvePlotter(output_dir)
+        self.roc_plotter = ROCPlotter(output_dir)
+        self.auc_plotter = AUCPlotter(output_dir)
     
     def create_all_plots(self, 
                         model: Any,
@@ -59,3 +63,11 @@ class ModelVisualiser:
             y_test,
             output_suffix=output_suffix
         )
+
+        # ROC curve plot
+        y_scores = model.predict_proba(X_test)[:, 1]
+        self.roc_plotter.plot(y_test, y_scores)
+        
+        # AUC plot
+        self.auc_plotter.plot(y_test, y_scores)
+        

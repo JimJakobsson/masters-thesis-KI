@@ -273,7 +273,7 @@ class ModelEvaluator(BaseEvaluator):
                 
             # For deep learning models, chunk data if it's too large
             elif explainer_type == 'deep':
-                max_deep_samples = 10000  # Adjust based on available memory
+                max_deep_samples = 200  # Adjust based on available memory
                 if len(data) > max_deep_samples:
                     # Use systematic sampling to maintain distribution
                     step = len(data) // max_deep_samples
@@ -285,7 +285,7 @@ class ModelEvaluator(BaseEvaluator):
                 # Use progressive sampling to find optimal sample size
                 from sklearn.model_selection import train_test_split
                 
-                max_kernel_samples = 100 # Adjust based on available memory
+                max_kernel_samples = 80 # Adjust based on available memory
                 if len(data) <= max_kernel_samples:
                     return data
                     

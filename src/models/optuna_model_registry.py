@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.ensemble import (
     RandomForestClassifier, HistGradientBoostingClassifier,
     BaggingClassifier, StackingClassifier, VotingClassifier
@@ -157,14 +158,14 @@ class OptunaModelRegistry:
         # Define parameter ranges for final estimator
         param_grid = {
             'final_estimator__bootstrap': [True],
-            'final_estimator__ccp_alpha': (0.0001, 0.01),
+            'final_estimator__ccp_alpha': (0.0001, 0.1),
             'final_estimator__criterion': ['entropy', 'gini'],
-            'final_estimator__max_depth': (5, 60),
+            'final_estimator__max_depth': (15, 60),
             'final_estimator__max_features': ['sqrt', 'log2'],
-            'final_estimator__max_leaf_nodes': (10, 60),
+            'final_estimator__max_leaf_nodes': (30, 120),
             'final_estimator__min_impurity_decrease': (0.0, 0.1),
-            'final_estimator__min_samples_leaf': (3, 20),
-            'final_estimator__min_samples_split': (5, 40),
+            'final_estimator__min_samples_leaf': (20, 70),
+            'final_estimator__min_samples_split': (5, 80),
             'final_estimator__n_estimators': (60, 200),
             'final_estimator__random_state': [42]
         }
@@ -191,4 +192,87 @@ class OptunaModelRegistry:
             param_grid=param_grid,
             param_suggest=param_suggest,
             description='Stacking classifier with Optuna parameter suggestions for final estimator'
+        )
+
+    @staticmethod
+    def get_voting_config() -> ModelConfig:
+        """Get the configuration for a voting classifier"""
+        # Base estimators are fixed with optimal configurations
+        base_estimators = [
+            ('hgb', HistGradientBoostingClassifier(
+                class_weight={0: 1, 1: 1},
+                early_stopping=True,
+                l2_regularization=2.294280717958801,
+                learning_rate=0.23040698858775321,
+                max_bins=115,
+                max_depth=12,
+                max_iter=11,
+                max_leaf_nodes=33,
+                min_samples_leaf=81,
+                n_iter_no_change=17,
+                tol=0.030672753967226428,
+                validation_fraction=0.8821528541761128,
+                random_state=42,
+            )),
+            ('rf', RandomForestClassifier(
+                bootstrap=True,
+                ccp_alpha=0.004681320432681322,
+                class_weight={0: 1, 1: 1},
+                criterion='entropy',
+                max_depth=46,
+                max_features='sqrt',
+                max_leaf_nodes=30,
+                max_samples=0.4343415014797324,
+                min_impurity_decrease=0.022289899203164085,
+                min_samples_leaf=1,
+                min_samples_split=25,
+                min_weight_fraction_leaf=0.001594042722389311,
+                n_estimators=84,
+                oob_score=False,
+                random_state=42
+            ))
+        ]
+
+        # Create initial voting classifier
+        base_model = VotingClassifier(
+            estimators=base_estimators,
+            voting='soft',
+            n_jobs=-1
+        )
+        
+            # Define weight configurations
+        WEIGHT_CONFIGS = {
+            'equal': [1.0, 1.0],          # equal weights
+            'more_rf': [1.0, 2.0],        # more weight on RF
+            'more_hgb': [2.0, 1.0],       # more weight on HGB
+            'slight_more_rf': [1.0, 1.5],  # slightly more weight on RF
+            'slight_more_hgb': [1.5, 1.0], # slightly more weight on HGB
+            'more_rf_2': [1.0, 3.0],      # more weight on RF
+            'more_hgb_2': [3.0, 1.0],     # more weight on HGB
+
+        }
+        
+        # Define parameter ranges
+        param_grid = {
+            'voting': ['soft'],
+            'weight_config': list(WEIGHT_CONFIGS.keys())  # Use string identifiers for storage
+        }
+
+        def param_suggest(trial):
+            """Suggest parameters for voting classifier"""
+            # Get the weight configuration identifier
+            weight_config = trial.suggest_categorical('weight_config', param_grid['weight_config'])
+            
+            params = {
+                'voting': 'soft',
+                'weights': WEIGHT_CONFIGS[weight_config]  # Convert to actual weights
+            }
+            return params
+        param_grid['param_suggest'] = param_suggest
+        return ModelConfig(
+            name='Voting Classifier',
+            model=base_model,
+            param_grid=param_grid,
+            param_suggest=param_suggest,
+            description='Voting classifier with optimized weights and soft voting'
         )

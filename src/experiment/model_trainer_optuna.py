@@ -1,7 +1,7 @@
 import optuna
 import time
 from typing import Any, Dict, Tuple
-from sklearn.ensemble import RandomForestClassifier, StackingClassifier
+from sklearn.ensemble import RandomForestClassifier, StackingClassifier, VotingClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 import pandas as pd
@@ -79,28 +79,28 @@ class ModelTrainerOptuna:
                     
                     # Create new model instance
                     model = model_class(**base_config)
+                elif isinstance(pipeline.named_steps['classifier'], VotingClassifier):
+                    # Get suggested parameters
+                    suggested_params = param_grid['param_suggest'](trial)
+                    # Create base configuration
+                    base_config = {
+                        'estimators': pipeline.named_steps['classifier'].estimators,
+                        'n_jobs': -1,
+                        'voting': suggested_params['voting'],
+                        'weights': suggested_params['weights']  # Already converted to list in param_suggest
+                    }
+                    
+                    
+                    # Create new model instance
+                    model = model_class(**base_config)
                 else:
                     # Suggest parameters
                     params = {}
                     for param_name, param_range in param_grid.items():
                         clean_name = param_name.replace('classifier__', '')
                         params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
+                    model = model_class(**params)
                      # Separately handle class weight optimization
-
-                #  # Suggest just the weight value for class 1
-                # class_1_weight = self.suggest_parameter(
-                #     trial,
-                #     'class_weight_ratio',  # Using a different name to avoid confusion
-                #     [1.0, 2.0, 2.5, 3.0, 3.5, 4.0]  # Possible weight values for class 1
-                # )
-                
-                # # Construct the class_weight dictionary after getting the suggested value
-                # params['class_weight'] = {
-                #     0: 1.0,  # Fixed weight for class 0
-                #     1: class_1_weight  # Suggested weight for class 1
-                # }
-                # Create new model instance with suggested parameters
-                model = model_class(**params)
                 
                 # Create and evaluate pipeline
                 trial_pipeline = Pipeline([
@@ -173,9 +173,31 @@ class ModelTrainerOptuna:
             
             # Create final stacking classifier
             final_model = pipeline.named_steps['classifier'].__class__(**base_config)
+        elif isinstance(pipeline.named_steps['classifier'], VotingClassifier):
+            # Get base configuration for voting classifier
+            base_config = {
+                'estimators': pipeline.named_steps['classifier'].estimators,
+                'n_jobs': -1,
+                'voting': 'soft'  # We're using soft voting
+            }
+            
+            # Get weight configuration from best parameters
+            if 'weight_config' in study.best_params:
+                weight_config = study.best_params['weight_config']
+                # Convert weight_config string to actual weights using the same mapping as in param_suggest
+                WEIGHT_CONFIGS = {
+                    'equal': [1.0, 1.0],
+                    'more_rf': [1.0, 2.0],
+                    'more_hgb': [2.0, 1.0],
+                    'slight_more_rf': [1.0, 1.5],
+                    'slight_more_hgb': [1.5, 1.0]
+                }
+                base_config['weights'] = WEIGHT_CONFIGS[weight_config]
+            
+            # Create final voting classifier
+            final_model = pipeline.named_steps['classifier'].__class__(**base_config)
         else:
             best_params = {k.replace('classifier__', ''): v for k, v in study.best_params.items()}
-            print(f"new_best_params", best_params)
             final_model = pipeline.named_steps['classifier'].__class__(**best_params)
         
         final_pipeline = Pipeline([

@@ -10,10 +10,10 @@ class ModelSelector:
     def __init__(self):
         self.registry = {
             
-            # 'random_forest': OptunaModelRegistry.get_random_forest_config,
-            # 'hist_gradient_boosting': OptunaModelRegistry.get_hist_gradient_boosting_config,
-            'stacking': OptunaModelRegistry.get_stacking_config,
-
+            'random_forest_classifier': OptunaModelRegistry.get_random_forest_config,
+            # 'hist_gradient_boosting_classifier': OptunaModelRegistry.get_hist_gradient_boosting_config,
+            # 'stacking classifier': OptunaModelRegistry.get_stacking_config,
+            # 'voting classifier': OptunaModelRegistry.get_voting_config,
 
             # 'random_forest': ModelRegistry.get_random_forest_config,
             # 'decision_tree': ModelRegistry.get_decision_tree_config,
