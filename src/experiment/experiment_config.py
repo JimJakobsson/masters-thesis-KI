@@ -16,4 +16,4 @@ class ExperimentConfig:
     random_state: int = 42
     cv_folds: int = 5
     n_trials_optuna: int = 300
-    threshold: float = 0.47 # Threshold for classification. Higher values benefits class 0, lower values benefits class 1
+    threshold: float = 0.5 # Threshold for classification. Higher values benefits class 0, lower values benefits class 1

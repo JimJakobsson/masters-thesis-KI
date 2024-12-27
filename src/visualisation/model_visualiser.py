@@ -3,6 +3,7 @@ from typing import Any, Dict
 import pandas as pd
 
 from visualisation.auc_plotter import AUCPlotter
+from visualisation.confusion_matrix import ConfusionMatrixPlotter
 from visualisation.feature_importance_plotter import FeatureImportancePlotter
 from visualisation.learning_curve import LearningCurvePlotter
 from visualisation.roc_plotter import ROCPlotter
@@ -18,6 +19,7 @@ class ModelVisualiser:
         self.learning_plotter = LearningCurvePlotter(output_dir)
         self.roc_plotter = ROCPlotter(output_dir)
         self.auc_plotter = AUCPlotter(output_dir)
+        self.confusion_matrix_plotter = ConfusionMatrixPlotter(output_dir)
     
     def create_all_plots(self, 
                         model: Any,
@@ -66,8 +68,18 @@ class ModelVisualiser:
 
         # ROC curve plot
         y_scores = model.predict_proba(X_test)[:, 1]
-        self.roc_plotter.plot(y_test, y_scores)
-        
+        self.roc_plotter.plot(y_test, y_scores, show_thresholds=True)
+
+        #Confusion matrix plot
+        y_pred = model.predict(X_test)
+        self.confusion_matrix_plotter.plot(
+            y_true=y_test,
+            y_pred=y_pred,
+            labels=['Negative', 'Positive'],  # Add custom labels
+            cmap='Blues',    # Use default color scheme
+            figsize=(8, 8)   # Default size
+        )
+                                           
+
         # AUC plot
-        self.auc_plotter.plot(y_test, y_scores)
-        
+        # self.auc_plotter.plot(y_test, y_scores, show_t)
