@@ -1,0 +1,11 @@
+2024-12-27 18:34:05,298 - ERROR - Error in random_forest_classifier experiment: plot() got an unexpected keyword argument 'normalize'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 151, in run
+    self.evaluator.plot_all(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 384, in plot_all
+    self.model_visualiser.create_all_plots(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/visualisation/model_visualiser.py", line 75, in create_all_plots
+    self.confusion_matrix_plotter.plot(
+TypeError: plot() got an unexpected keyword argument 'normalize'

@@ -1,0 +1,12 @@
+              precision    recall  f1-score   support
+
+           0       0.71      0.85      0.77        54
+           1       0.85      0.70      0.77        63
+
+    accuracy                           0.77       117
+   macro avg       0.78      0.78      0.77       117
+weighted avg       0.78      0.77      0.77       117
+
+
+Best parameters found during grid search:
+{'weight_config': 'equal'}

@@ -1,0 +1,13 @@
+2024-12-27 18:13:20,688 - ERROR - Error in random_forest_classifier experiment: 'ROCPlotter' object has no attribute 'config'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 151, in run
+    self.evaluator.plot_all(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 384, in plot_all
+    self.model_visualiser.create_all_plots(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/visualisation/model_visualiser.py", line 71, in create_all_plots
+    self.roc_plotter.plot(y_test, y_scores, show_thresholds=True)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/visualisation/roc_plotter.py", line 43, in plot
+    plt.figure(figsize=self.config.FIGURE_SIZES['roc'],)
+AttributeError: 'ROCPlotter' object has no attribute 'config'
