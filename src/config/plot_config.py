@@ -8,7 +8,8 @@ class PlotConfig:
         'shap': (10, 12),
         'waterfall': (20, 15),
         'learning': (10, 6),
-        'roc': (8, 8),
+        'roc': (6, 6),
+        'confusion': (6, 6),
     })
     DPI: int = 300
     FONT_SIZES: Dict[str, int] = field(default_factory=lambda: {
