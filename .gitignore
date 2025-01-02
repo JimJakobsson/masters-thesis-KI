@@ -1,6 +1,6 @@
 __pycache__
 # *.pdf
-# src/outputs/*
+src/outputs/*
 src/misc/*
 src/database/connection.py
 src/database/database_config.py

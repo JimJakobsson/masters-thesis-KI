@@ -10,13 +10,13 @@ def get_random_forest_config() -> ModelConfig:
         'max_depth': (20, 60),
         'max_features': ['sqrt'],
         'max_leaf_nodes': (15, 60),
-        'max_samples': (0.1, 1.0),
+        'max_samples': (0.5, 1.0),
         'min_impurity_decrease': (0.0, 0.1),
         'min_samples_leaf': (1, 20),
         'min_samples_split': (5, 30),
-        'min_weight_fraction_leaf': (0.0, 0.5),
+        'min_weight_fraction_leaf': (0.0, 0.1),
         'n_estimators': (80, 160),
-        'oob_score': [True, False],
+        'oob_score': [False],
         'random_state': 42,
     }
     

@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Counter, Dict, Optional
 
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -16,14 +16,16 @@ from experiment.model_trainer_optuna import ModelTrainerOptuna
 from preprocessing import preprocessing_result
 from preprocessing.data_preprocessor import DataPreprocessor
 from preprocessing.preprocessing_result import PreprocessingResult
+from imblearn.over_sampling import SMOTE
+
 
 class Experiment: 
     def __init__(self,
                  model: BaseEstimator,
                  param_grid: Dict,
                  db_reader: DatabaseReader,
-                 output_dir: Optional[Path] = None,
-                 experiment_config: Optional[ExperimentConfig] = None):
+                 experiment_config: ExperimentConfig,
+                 output_dir: Optional[Path] = None):
         
         self.config = experiment_config
         self.output_dir = Path(output_dir) if output_dir else Path('outputs')
@@ -115,9 +117,12 @@ class Experiment:
         # Load and process data
         cache_path = Path("misc/combined_tables_ipt1.csv") 
         
-        raw_data = self.db_reader.read_ipt1_data(use_cache = False, cache_path=cache_path)
+        raw_data = self.db_reader.read_ipt_data(self.config.data_table, use_cache = False, cache_path=cache_path)
         raw_data = self.data_handler.calculate_ages(raw_data)
-        labeled_data = self.preprocessor.create_labels(raw_data)
+        labeled_data = self.preprocessor.create_labels(
+            data=raw_data, 
+            base_year=self.config.base_year, 
+            death_threshold = self.config.death_threshold)
         #Drop features age_death and age
         #REMOVE LATER
         # labeled_data = labeled_data.drop(columns=['age_death', 'age'])
@@ -128,6 +133,7 @@ class Experiment:
 
         #Split before preprocessing
         X_train, X_test, y_train, y_test = self.trainer.split_data(X, y)
+
         #Create the preprocessor using training data
         preprocessor = self.preprocessor.create_preprocessor(X_train)
         

@@ -3,13 +3,12 @@ import pandas as pd
 
 class LabelProcessor:
     """Handles creation and processing of labels"""
-    def __init__(self, threshold: int = 2005):
-        self._threshold = threshold
+    
     
 
-    def create_labels(self, df: pd.DataFrame) -> pd.DataFrame:
+    def create_labels(self, df: pd.DataFrame, base_year: int, death_threshold: int) -> pd.DataFrame:
         """Create binary labels based on the 'death_yrmon' column"""
-
+        threshold = base_year + death_threshold
         df = df.copy()
         # Remove rows with null death_yrmon.
         #inplace=True modifies the original DataFrame
@@ -22,7 +21,7 @@ class LabelProcessor:
 
         # Create labels
         df['labels'] = df['death_yrmon'].apply(
-            lambda x: self._create_label(x, self._threshold)
+            lambda x: self._create_label(x, threshold)
         )
         
         # Clean up and validate

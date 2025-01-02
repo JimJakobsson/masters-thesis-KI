@@ -13,7 +13,7 @@ from experiment_runner import ExperimentRunner
 
 # Custom modules
 # from src.database.config import DatabaseConfig
-from database.IPT1_reader import IPT1Reader
+from database.IPT_reader import IPTReader
 # from src.preprocessing.config import PreprocessingConfig 
 # from src.ml.config import ExperimentConfig
 # from src.ml.experiment import MLExperiment
@@ -21,13 +21,15 @@ from database.IPT1_reader import IPT1Reader
 from database.database_config import DatabaseConfig
 
 class Main:
-    def main():
+    def main(ipt_table: str = "IPT1"):
         """Entry point for the experiment runner"""
 
         try:
+            # Load the mebauth module
             subprocess.run('module load mebauth', shell=True, capture_output=True, text=True)
 
             runner = ExperimentRunner()
+
             runner.run_experiments()
         except Exception as e:
             logging.error(f"Experiment runner failed: {str(e)}")

@@ -5,7 +5,7 @@ import sys
 from typing import List, Optional
 
 import DatabaseReader
-from database.IPT1_reader import IPT1Reader
+from database.IPT_reader import IPTReader
 from database.database_config import DatabaseConfig
 from experiment.experiment_config import ExperimentConfig
 from models.experiment_suite import ExperimentSuite
@@ -44,7 +44,7 @@ class ExperimentRunner:
                 server='kosmos',
                 database='SATSA_ARKIV'
             )
-            return IPT1Reader(db_config)
+            return IPTReader(db_config)
         except Exception as e:
             logging.error(f"Database setup failed: {str(e)}")
             raise

@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 
+from preprocessing.null_indicator import NullIndicator
 from preprocessing.preprocessing_result import PreprocessingResult
 from config.preprocessing_config import PreprocessingConfig
 from .feature_detector import FeatureDetector
@@ -22,6 +23,7 @@ class DataPreprocessor:
         self.preprocessor: Optional[ColumnTransformer] = None
         self.categorical_features: Optional[List[str]] = None
         self.numeric_features: Optional[List[str]] = None
+        self.null_indicator = NullIndicator()
     
     def create_preprocessor(self, X: pd.DataFrame) -> ColumnTransformer:
         """
@@ -44,7 +46,7 @@ class DataPreprocessor:
             max_categories=self.config.MAX_CATEGORIES_PER_FEATURE
         )
         ##ADD NULL INDICATOR COLUMN
-        
+
         # Validate numeric columns
         self._validate_numeric_columns(X_cleaned)
         
@@ -71,13 +73,15 @@ class DataPreprocessor:
                     f"Column '{col}' contains non-numeric values: {problematic_values}. "
                     "Please check your data or consider treating this column as categorical."
                 )
-    def create_labels(self, data: pd.DataFrame) -> pd.DataFrame:
+    def create_labels(self, data: pd.DataFrame, base_year: int, death_threshold: int) -> pd.DataFrame:
         """Create labels from raw data"""
-        return self.label_processor.create_labels(data)
+        return self.label_processor.create_labels(df=data, base_year=base_year, death_threshold=death_threshold)
 
     def get_features_and_target(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """Separate features and target from labeled data"""
-        X = data.drop(['labels', 'death_yrmon', 'twinnr', 'punching'], axis=1)
+        columns_to_drop = ['labels', 'death_yrmon', 'twinnr', 'TWINNR' 'punching']
+        X = data.drop(columns=[col for col in columns_to_drop if col in data.columns], axis=1)
+        X = X.drop(columns=[col for col in X.columns if 'twinnr' in col.lower()], axis=1)
         y = data['labels']
         return X, y
 

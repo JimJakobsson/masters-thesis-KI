@@ -14,7 +14,10 @@ class ModelSelector:
             # 'hist_gradient_boosting_classifier': OptunaModelRegistry.get_hist_gradient_boosting_config,
             # 'stacking classifier': OptunaModelRegistry.get_stacking_config,
             # 'voting classifier': OptunaModelRegistry.get_voting_config,
-            # 'bagging classifier': OptunaModelRegistry.get_bagging_config,
+            # 'bagging classifier using random forest': 
+            #     lambda: OptunaModelRegistry.get_bagging_config('random_forest'),
+            # 'bagging classifier using hist grad boost': 
+            #     lambda: OptunaModelRegistry.get_bagging_config('hist_gradient_boosting'),
 
             # 'random_forest': ModelRegistry.get_random_forest_config,
             # 'decision_tree': ModelRegistry.get_decision_tree_config,

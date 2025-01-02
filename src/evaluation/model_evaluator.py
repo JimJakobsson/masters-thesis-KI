@@ -71,6 +71,14 @@ class ModelEvaluator(BaseEvaluator):
 
         for name, transformer, columns in processor.transformers_:
             if name == 'num':
+                # Get names from the numeric pipeline
+                numeric_pipeline = processor.named_transformers_['num']
+                
+                # First get null indicator names
+                null_indicator = numeric_pipeline.named_steps['null_indicator']
+                if hasattr(null_indicator, 'null_feature_names'):
+                    feature_names.extend([f"{col}_nan" for col in columns])
+
                 feature_names.extend(columns)
             elif name == 'cat':
                 encoder = processor.named_transformers_['cat'].named_steps['onehot']
@@ -175,7 +183,10 @@ class ModelEvaluator(BaseEvaluator):
             Tuple containing:
             - Dictionary mapping original feature names to aggregated SHAP values
             - DataFrame with feature importance statistics
-        """
+        """           
+        # Print feature counts by type
+        null_indicators = [f for f in processed_feature_names if f.endswith('_nan')]
+        print(f"Number of null indicators: {len(null_indicators)}")
         # If we have binary classification, use values for positive class
         if len(shap_values.shape) == 3:
             shap_values = shap_values[:, :, 1]
@@ -194,13 +205,32 @@ class ModelEvaluator(BaseEvaluator):
         for feature in original_features:
             if feature in numeric_features:
                 if current_idx not in processed_indices:
-                    # # For numeric features, just copy the SHAP values directly
-                    # if current_idx < len(processed_feature_names):
-                    #     aggregated_shap[feature] = shap_values[:, current_idx]
-                    #     current_idx += 1
-                    aggregated_shap[feature] = shap_values[:, current_idx]
-                    processed_indices.add(current_idx)
-                    current_idx += 1
+                    # Add the original feature first
+                    if current_idx < len(processed_feature_names):
+                        feature_name = processed_feature_names[current_idx]
+                        # print(f"Processing {feature_name} at index {current_idx}")
+                        aggregated_shap[feature] = shap_values[:, current_idx]
+                        processed_indices.add(current_idx)
+                        current_idx += 1
+                    
+                    # Check for null indicator
+                    null_feature_name = f"{feature}_nan"
+                    if current_idx < len(processed_feature_names) and processed_feature_names[current_idx] == null_feature_name:
+                        # Only include null indicator if there are actual null values
+                        null_values = shap_values[:, current_idx]
+                        if np.any(null_values != 0):  # Only include if it has non-zero SHAP values
+                            # print(f"Processing {null_feature_name} at index {current_idx}")
+                            aggregated_shap[null_feature_name] = null_values
+                        processed_indices.add(current_idx)
+                        current_idx += 1
+                # if current_idx not in processed_indices:
+                #     # # For numeric features, just copy the SHAP values directly
+                #     # if current_idx < len(processed_feature_names):
+                #     #     aggregated_shap[feature] = shap_values[:, current_idx]
+                #     #     current_idx += 1
+                #     aggregated_shap[feature] = shap_values[:, current_idx]
+                #     processed_indices.add(current_idx)
+                #     current_idx += 1
             else:
                 # For categorical features, find all related one-hot encoded columns
                 feature_mask = np.array([col.startswith(f"{feature}_") for col in processed_feature_names])
@@ -228,7 +258,13 @@ class ModelEvaluator(BaseEvaluator):
         feature_importance_abs_mean = feature_importance_dataframe.sort_values(
             'importance_abs_mean', ascending=False)
         print("features importance abs mean", feature_importance_abs_mean.head(10))
-        
+         # Print null indicator statistics
+        null_indicators = feature_importance_abs_mean[
+            feature_importance_abs_mean['feature'].str.endswith('_nan')]
+        if not null_indicators.empty:
+            print("\nNull indicator importance:")
+            print(null_indicators[['feature', 'importance_abs_mean']].head(10))
+
         return aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean 
      
 
@@ -285,7 +321,7 @@ class ModelEvaluator(BaseEvaluator):
                 # Use progressive sampling to find optimal sample size
                 from sklearn.model_selection import train_test_split
                 
-                max_kernel_samples = 80 # Adjust based on available memory
+                max_kernel_samples = 2 # Adjust based on available memory and time
                 if len(data) <= max_kernel_samples:
                     return data
                     
@@ -328,33 +364,6 @@ class ModelEvaluator(BaseEvaluator):
                 
         except Exception as e:
             raise Exception(f"Error creating SHAP explainer: {str(e)}")
-    # def _create_explainer(self, model: BaseEstimator, 
-    #                      data: Optional[np.ndarray] = None) -> Any:
-    #     """Create appropriate SHAP explainer based on model type"""
-    #     classifier = model.named_steps['classifier']
-    #     model_name = classifier.__class__.__name__
-    #     # background_summary = pd.DataFrame(data).sample(n=100, random_state=42)
-    #     background_summary = data
-    #     try:
-    #         if model_name in ModelConfig.TREE_BASED_MODELS:
-    #             print("Tree explainer created")
-    #             return shap.TreeExplainer(classifier)
-    #         elif model_name in ModelConfig.DEEP_LEARNING_MODELS:
-    #             if data is None:
-    #                 raise ValueError("Background data required for DeepExplainer")
-    #             return shap.DeepExplainer(model, background_summary)
-    #         elif model_name in ModelConfig.LINEAR_MODELS:
-    #             print("Linear explainer created")
-    #             return shap.LinearExplainer(model, background_summary)
-    #         elif model_name in ModelConfig.KERNEL_EXPLAINER_MODELS:
-    #             if data is None:
-    #                 raise ValueError("Background data required for KernelExplainer")
-    #             print("Kernel explainer created")
-    #             return shap.KernelExplainer(classifier.predict_proba, background_summary, silent=False)
-    #         else:
-    #             raise ValueError(f"Unsupported model type: {model_name}")
-    #     except Exception as e:
-    #         raise Exception(f"Error creating SHAP explainer: {str(e)}")
         
     def plot_all(self, model: BaseEstimator, 
                  X_train: pd.DataFrame, X_test: pd.DataFrame,

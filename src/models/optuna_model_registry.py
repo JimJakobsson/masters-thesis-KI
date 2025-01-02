@@ -26,8 +26,8 @@ class OptunaModelRegistry:
         return get_voting_config()
     
     @staticmethod
-    def get_bagging_config() -> ModelConfig:
-        return get_bagging_config()
+    def get_bagging_config(classifer: str) -> ModelConfig:
+        return get_bagging_config(classifer)
 # import numpy as np
 # from sklearn.ensemble import (
 #     RandomForestClassifier, HistGradientBoostingClassifier,
