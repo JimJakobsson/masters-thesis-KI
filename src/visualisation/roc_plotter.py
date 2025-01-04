@@ -24,7 +24,7 @@ class ROCPlotter(BasePlotter):
         
         return thresholds[optimal_idx], optimal_idx
 
-    def plot(self, y_true, y_scores, show_thresholds=True):
+    def plot(self, y_true, y_scores, output_suffix: str, show_thresholds=True):
         """
         Plots the ROC curve with optimal thresholds.
         """
@@ -74,5 +74,5 @@ class ROCPlotter(BasePlotter):
         plt.grid(True, alpha=0.3)
 
         # Save plot
-        self.save_plot('roc_curve.pdf')
+        self.save_plot('roc_curve.pdf', output_suffix)
         plt.close()

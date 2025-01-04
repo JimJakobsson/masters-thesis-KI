@@ -68,7 +68,7 @@ class ModelVisualiser:
 
         # ROC curve plot
         y_scores = model.predict_proba(X_test)[:, 1]
-        self.roc_plotter.plot(y_test, y_scores, show_thresholds=True)
+        self.roc_plotter.plot(y_test, y_scores, show_thresholds=True, output_suffix=output_suffix)
 
         #Confusion matrix plot
         y_pred = model.predict(X_test)
@@ -77,7 +77,8 @@ class ModelVisualiser:
             y_pred=y_pred,
             labels=['Negative', 'Positive'],  # Add custom labels
             cmap='Blues',    # Use default color scheme
-            figsize=(8, 8)   # Default size
+            figsize=(8, 8),   # Default size
+            output_suffix=output_suffix
         )
                                            
 

@@ -43,7 +43,7 @@ class PipelineCreator:
         return Pipeline(steps=[
             # imputer possible but ignored for now
             ('null_indicator', NullIndicator()),
-            ('imputer', SimpleImputer(strategy='mean')),
+            # ('imputer', SimpleImputer(strategy='mean')),
             ('scaler', StandardScaler())
         ])
     

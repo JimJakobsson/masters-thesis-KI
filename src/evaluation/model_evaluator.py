@@ -14,8 +14,7 @@ from visualisation.shap_plots import ShapPlotter
 from visualisation.learning_curve import LearningCurvePlotter
 from .metrics import Metrics
 from sklearn.model_selection import StratifiedShuffleSplit
-
-
+from .threshold_finder import ThresholdFinder
 # from ..utils.validation import validate_shap_calculation
 
 class ModelEvaluator(BaseEvaluator):
@@ -34,33 +33,39 @@ class ModelEvaluator(BaseEvaluator):
         self.feature_plotter = FeatureImportancePlotter(self.output_dir)
         self.shap_plotter = ShapPlotter(self.output_dir)
         self.learning_curve_plotter = LearningCurvePlotter(self.output_dir)
+        self.threshold_finder = ThresholdFinder()
 
         #Initialize report
         self.report = ReportClassification()
         self.metrics = Metrics()   
     
     def evaluate_model(self, grid_search: BaseEstimator, X_test: pd.DataFrame, 
-                      y_test: pd.Series, threshold: float = 0.7) -> Dict[str, Any]:
+                  y_test: pd.Series, threshold: float = None) -> Dict[str, Any]:
         """Evaluate model performance using classification metrics"""
         
         y_prob = grid_search.predict_proba(X_test)[:, 1]
-        print(f"Threshold: {threshold}")
+        
+        # Find optimal threshold if none provided
+        if threshold is None:
+            threshold = self.threshold_finder.find_optimal_threshold(y_test, y_prob)
+        
+        print(f"Using threshold: {threshold}")
         y_pred = (y_prob > threshold).astype(int)
         y_test = y_test.astype(int)
         
-        #Prints a classification report
+        # Print a classification report
         report = self.report.print_classification_report(y_test, y_pred)
-        #include classification report in log file
         self.results.update({'classification_report': report})
-        metrics_result = self.metrics.calculate_classification_metrics(y_test, y_pred, y_prob)
         
+        # Calculate and store metrics
+        metrics_result = self.metrics.calculate_classification_metrics(y_test, y_pred, y_prob)
         self.results.update({
             'best_params': grid_search.best_params_,
             'best_cv_score': grid_search.best_score_,
+            'optimal_threshold': threshold,
             **metrics_result
         })
         
-        #print metrics using format_metrics_for_display
         print(self.metrics.format_metrics_for_display(metrics_result))
         return self.results
     

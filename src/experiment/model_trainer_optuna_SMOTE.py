@@ -1,4 +1,3 @@
-
 import optuna
 import time
 from typing import Any, Dict, Tuple
@@ -6,9 +5,10 @@ from sklearn.ensemble import RandomForestClassifier, StackingClassifier, VotingC
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 import pandas as pd
-import numpy as np
 from experiment.experiment_config import ExperimentConfig
 from experiment.optuna_wrapper import OptunaWrapper
+from imblearn.over_sampling import SMOTE
+from collections import Counter
 
 class ModelTrainerOptuna:
     def __init__(self, config: ExperimentConfig):
@@ -40,14 +40,6 @@ class ModelTrainerOptuna:
             
         # If it's a single value, return it directly
         return param_range
-    
-    def suggest_class_weights(self, trial) -> Dict:
-        """Suggest class weights for binary classification"""
-        # We'll keep class 0 weight fixed at 1.0 and optimize class 1 weight
-        # This helps reduce the search space while still allowing for different class balances
-        class1_weight = trial.suggest_float('class1_weight', 0.1, 10.0, log=True)
-        print(f"class1_weight: {class1_weight}")
-        return {0: 1.0, 1: class1_weight}
 
     def train_model(self,
                    pipeline: Pipeline,
@@ -57,6 +49,30 @@ class ModelTrainerOptuna:
                    n_trials: int = 10) -> Any:
         """Train model using Optuna for hyperparameter optimization"""
 
+        # Print original class distribution
+        print("\nOriginal class distribution:")
+        print(Counter(y))
+
+        # First apply preprocessing
+        X_preprocessed = pipeline.named_steps['preprocessor'].fit_transform(X)
+        
+        # Convert to DataFrame if sparse matrix
+        if hasattr(X_preprocessed, 'toarray'):
+            X_preprocessed = pd.DataFrame(X_preprocessed.toarray())
+        elif not isinstance(X_preprocessed, pd.DataFrame):
+            X_preprocessed = pd.DataFrame(X_preprocessed)
+
+        # Apply SMOTE to balance the preprocessed dataset
+        smote = SMOTE(
+            random_state=self.config.random_state, 
+            sampling_strategy='auto',
+            k_neighbors=5)
+        X_resampled, y_resampled = smote.fit_resample(X_preprocessed, y)
+
+        # Print class distribution after SMOTE
+        print("\nClass distribution after SMOTE:")
+        print(Counter(y_resampled))
+
         #Number of trials from the configuration
         n_trials = self.config.n_trials_optuna
 
@@ -64,7 +80,6 @@ class ModelTrainerOptuna:
             try:
                 # Get base model class
                 model_class = pipeline.named_steps['classifier'].__class__
-                
                 # Special handling for StackingClassifier
                 if isinstance(pipeline.named_steps['classifier'], StackingClassifier):
                     # Get base configuration
@@ -84,10 +99,6 @@ class ModelTrainerOptuna:
                             trial, param_key, param_range
                         )
                     
-                    # Add class weights for final estimator if it supports them
-                    if hasattr(RandomForestClassifier(), 'class_weight'):
-                        final_estimator_params['class_weight'] = self.suggest_class_weights(trial)
-                    
                     # Create new final estimator
                     final_estimator = RandomForestClassifier(**final_estimator_params)
                     base_config['final_estimator'] = final_estimator
@@ -102,7 +113,7 @@ class ModelTrainerOptuna:
                         'estimators': pipeline.named_steps['classifier'].estimators,
                         'n_jobs': -1,
                         'voting': suggested_params['voting'],
-                        'weights': suggested_params['weights']
+                        'weights': suggested_params['weights']  # Already converted to list in param_suggest
                     }
                     
                     # Create new model instance
@@ -113,22 +124,12 @@ class ModelTrainerOptuna:
                     for param_name, param_range in param_grid.items():
                         clean_name = param_name.replace('classifier__', '')
                         params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
-                    
-                    # Add class weights if the model supports them
-                    if hasattr(model_class(), 'class_weight'):
-                        params['class_weight'] = self.suggest_class_weights(trial)
-                    
                     model = model_class(**params)
                 
-                # Create and evaluate pipeline
-                trial_pipeline = Pipeline([
-                    ('preprocessor', pipeline.named_steps['preprocessor']),
-                    ('classifier', model)
-                ])
-                
+                # Create and evaluate pipeline (no preprocessor needed as data is already preprocessed)
                 scores = cross_val_score(
-                    trial_pipeline,
-                    X, y,
+                    model,  # Just use the model since data is already preprocessed
+                    X_resampled, y_resampled,  # Use resampled data for cross-validation
                     cv=self.config.cv_folds,
                     scoring='f1',
                     n_jobs=-1
@@ -136,7 +137,7 @@ class ModelTrainerOptuna:
                 return scores.mean()
             
             except Exception as e:
-                print(f"Trial failed with parameters {trial.params} due to error: {str(e)}")
+                print(f"Trial failed with parameters {params} due to error: {str(e)}")
                 raise  # Re-raise the exception for Optuna to handle
 
         # Create study with pruner
@@ -175,14 +176,7 @@ class ModelTrainerOptuna:
             
             # Create parameters for final estimator
             final_estimator_params = {}
-            best_params = study.best_params.copy()
-            
-            # Handle class weights if present
-            class1_weight = best_params.pop('class1_weight', None)
-            if class1_weight is not None:
-                final_estimator_params['class_weight'] = {0: 1.0, 1: class1_weight}
-            
-            for param_name, value in best_params.items():
+            for param_name, value in study.best_params.items():
                 # Remove 'final_estimator__' prefix
                 param_key = param_name.replace('final_estimator__', '')
                 final_estimator_params[param_key] = value
@@ -198,12 +192,13 @@ class ModelTrainerOptuna:
             base_config = {
                 'estimators': pipeline.named_steps['classifier'].estimators,
                 'n_jobs': -1,
-                'voting': 'soft'
+                'voting': 'soft'  # We're using soft voting
             }
             
             # Get weight configuration from best parameters
             if 'weight_config' in study.best_params:
                 weight_config = study.best_params['weight_config']
+                # Convert weight_config string to actual weights using the same mapping as in param_suggest
                 WEIGHT_CONFIGS = {
                     'equal': [1.0, 1.0],
                     'more_rf': [1.0, 2.0],
@@ -217,21 +212,21 @@ class ModelTrainerOptuna:
             final_model = pipeline.named_steps['classifier'].__class__(**base_config)
         else:
             best_params = {k.replace('classifier__', ''): v for k, v in study.best_params.items()}
-            
-            # Handle class weights if present
-            class1_weight = best_params.pop('class1_weight', None)
-            if class1_weight is not None:
-                best_params['class_weight'] = {0: 1.0, 1: class1_weight}
-            
             final_model = pipeline.named_steps['classifier'].__class__(**best_params)
         
+        # Fit the final model with already preprocessed and SMOTE-balanced data
+        final_model.fit(X_resampled, y_resampled)
+        
+        # Create the final pipeline combining the fitted preprocessor and model
         final_pipeline = Pipeline([
             ('preprocessor', pipeline.named_steps['preprocessor']),
             ('classifier', final_model)
         ])
-        
-        final_pipeline.fit(X, y)
-        
+
+        # Print final distributions again for confirmation
+        print("\nFinal training data class distribution:")
+        print(Counter(y_resampled))
+
         return OptunaWrapper(final_pipeline, study)
 
     def split_data(self, X: pd.DataFrame, y: pd.Series) -> Tuple:

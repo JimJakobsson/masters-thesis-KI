@@ -20,6 +20,7 @@ class ConfusionMatrixPlotter(BasePlotter):
     def plot(self, 
             y_true: Union[List, np.ndarray],
             y_pred: Union[List, np.ndarray],
+            output_suffix: str,
             labels: Optional[List[str]] = None,
             cmap: str = 'Blues',
             figsize: tuple = (10, 8)):
@@ -68,7 +69,7 @@ class ConfusionMatrixPlotter(BasePlotter):
         plt.tight_layout()
 
         # Save plot
-        self.save_plot('confusion_matrix.pdf')
+        self.save_plot('confusion_matrix.pdf', output_suffix)
         plt.close()
 
     def plot_with_metrics(self,
