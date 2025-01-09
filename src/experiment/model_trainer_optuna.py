@@ -2,7 +2,7 @@
 import optuna
 import time
 from typing import Any, Dict, Tuple
-from sklearn.ensemble import RandomForestClassifier, StackingClassifier, VotingClassifier
+from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, StackingClassifier, VotingClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 import pandas as pd
@@ -95,18 +95,49 @@ class ModelTrainerOptuna:
                     # Create new model instance
                     model = model_class(**base_config)
                 elif isinstance(pipeline.named_steps['classifier'], VotingClassifier):
-                    # Get suggested parameters
-                    suggested_params = param_grid['param_suggest'](trial)
+                    WEIGHT_CONFIGS = {
+                    'equal': [1.0, 1.0],
+                    'slight_more_rf': [1.0, 1.5],
+                    'slight_more_hgb': [1.5, 1.0],
+                    'more_rf': [1.0, 2.0],
+                    'more_hgb': [2.0, 1.0],
+                    'more_rf_2.5': [1.0, 2.5],
+                    'more_hgb_2.5': [2.5, 1.0],
+                    'more_rf_3': [1.0, 3.0],
+                    'more_hgb_3': [3.0, 1.0],
+                }
+                    
+                    # Suggest weight configuration
+                    weight_config = trial.suggest_categorical('weight_config', list(WEIGHT_CONFIGS.keys()))
+                    print(f"\nTrial using weight configuration: {weight_config}")
+                    print(f"Weights: {WEIGHT_CONFIGS[weight_config]}")
+                    
                     # Create base configuration
                     base_config = {
                         'estimators': pipeline.named_steps['classifier'].estimators,
-                        'n_jobs': -1,
-                        'voting': suggested_params['voting'],
-                        'weights': suggested_params['weights']
+                        'n_jobs': 1,
+                        'voting': 'soft',
+                        'weights': WEIGHT_CONFIGS[weight_config]
                     }
                     
                     # Create new model instance
                     model = model_class(**base_config)
+                elif isinstance(pipeline.named_steps['classifier'], BaggingClassifier):
+                    if hasattr(param_grid, 'param_suggest'):
+                        # Use custom parameter suggestion if provided
+                        params = param_grid.param_suggest(trial)
+                    else:
+                        # Suggest parameters
+                        params = {}
+                        for param_name, param_range in param_grid.items():
+                            clean_name = param_name.replace('classifier__', '')
+                            params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
+                    
+                    # Ensure n_jobs is set to 1 to prevent nested parallelization
+                    params['n_jobs'] = 1
+                    
+                    # Create new model instance
+                    model = model_class(**params)
                 else:
                     # Suggest parameters
                     params = {}
@@ -131,7 +162,7 @@ class ModelTrainerOptuna:
                     X, y,
                     cv=self.config.cv_folds,
                     scoring='f1',
-                    n_jobs=-1
+                    n_jobs=2
                 )
                 return scores.mean()
             
@@ -206,10 +237,14 @@ class ModelTrainerOptuna:
                 weight_config = study.best_params['weight_config']
                 WEIGHT_CONFIGS = {
                     'equal': [1.0, 1.0],
+                    'slight_more_rf': [1.0, 1.5],
+                    'slight_more_hgb': [1.5, 1.0],
                     'more_rf': [1.0, 2.0],
                     'more_hgb': [2.0, 1.0],
-                    'slight_more_rf': [1.0, 1.5],
-                    'slight_more_hgb': [1.5, 1.0]
+                    'more_rf_2.5': [1.0, 2.5],
+                    'more_hgb_2.5': [2.5, 1.0],
+                    'more_rf_3': [1.0, 3.0],
+                    'more_hgb_3': [3.0, 1.0],
                 }
                 base_config['weights'] = WEIGHT_CONFIGS[weight_config]
             

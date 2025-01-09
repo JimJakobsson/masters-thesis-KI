@@ -14,34 +14,16 @@ def get_voting_config() -> ModelConfig:
         voting='soft',
         n_jobs=-1
     )
-    
-    WEIGHT_CONFIGS = {
-        'equal': [1.0, 1.0],
-        'more_rf': [1.0, 2.0],
-        'more_hgb': [2.0, 1.0],
-        'slight_more_rf': [1.0, 1.5],
-        'slight_more_hgb': [1.5, 1.0],
-        'more_rf_2': [1.0, 3.0],
-        'more_hgb_2': [3.0, 1.0],
-    }
-    
+   
     param_grid = {
-        'voting': ['soft'],
-        'weight_config': list(WEIGHT_CONFIGS.keys())
+        'voting': ['soft'], # Soft votiong. Hard voting not used
     }
 
-    def param_suggest(trial):
-        weight_config = trial.suggest_categorical('weight_config', param_grid['weight_config'])
-        params = {
-            'voting': 'soft',
-            'weights': WEIGHT_CONFIGS[weight_config]
-        }
-        return params
 
     return ModelConfig(
         name='Voting Classifier',
         model=base_model,
         param_grid=param_grid,
-        param_suggest=param_suggest,
+        param_suggest=param_grid,
         description='Voting classifier with optimized weights and soft voting'
     )

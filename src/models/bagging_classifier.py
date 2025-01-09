@@ -18,53 +18,44 @@ def get_bagging_config(classifier: str) -> ModelConfig:
         max_samples=0.8,  # Use a good portion of samples
         max_features=0.8,  # Use a good portion of features
         bootstrap=True,   # Enable bootstrapping
-        n_jobs=-1,
+        n_jobs=1,        # Avoid nested parallelization
         random_state=42
     )
     
-    # Improved parameter ranges based on typical best practices
+    # Modified parameter ranges with controlled parallelization
     param_grid = {
-        # More estimators often leads to better performance
-        'n_estimators': (50, 200),
+        # Reduced maximum number of estimators to manage memory better
+        'n_estimators': (30, 100),
         
         # Sample size range that ensures enough data for each estimator
-        'max_samples': (0.7, 1.0),
+        'max_samples': (0.7, 0.9),
         
         # Feature range that ensures enough features while allowing diversity
-        'max_features': (0.6, 1.0),
+        'max_features': (0.6, 0.9),
         
         # Only use bootstrap=True to be safe
         'bootstrap': [True],
         'bootstrap_features': [True, False],
         
-        # Disable out-of-bag score for now
+        # Disable out-of-bag score
         'oob_score': [False],
         
-        # Fixed parameters
-        'n_jobs': [-1],
+        # Fixed parameters - using single-threaded processing
+        'n_jobs': [1],   # Prevent nested parallelization
         'random_state': [42],
         'verbose': [0]
     }
 
     def param_suggest(trial):
         """Suggest parameters with intelligent combinations"""
-        n_estimators = trial.suggest_int('n_estimators', *param_grid['n_estimators'])
-        bootstrap = trial.suggest_categorical('bootstrap', param_grid['bootstrap'])
-        
-        # OOB score must be False when bootstrap is False
-        oob_score = False
-        if bootstrap:
-            # Only suggest oob_score if bootstrap is True
-            oob_score = trial.suggest_categorical('oob_score', [False])  # For now, keep it False always to avoid issues
-        
         params = {
-            'n_estimators': n_estimators,
+            'n_estimators': trial.suggest_int('n_estimators', *param_grid['n_estimators']),
             'max_samples': trial.suggest_float('max_samples', *param_grid['max_samples']),
             'max_features': trial.suggest_float('max_features', *param_grid['max_features']),
-            'bootstrap': bootstrap,
+            'bootstrap': True,  # Always True for stability
             'bootstrap_features': trial.suggest_categorical('bootstrap_features', param_grid['bootstrap_features']),
-            'oob_score': oob_score,
-            'n_jobs': param_grid['n_jobs'][0],
+            'oob_score': False,  # Always False for stability
+            'n_jobs': 1,        # Prevent nested parallelization
             'random_state': param_grid['random_state'][0],
             'verbose': param_grid['verbose'][0]
         }
@@ -76,5 +67,5 @@ def get_bagging_config(classifier: str) -> ModelConfig:
         model=base_model,
         param_grid=param_grid,
         param_suggest=param_suggest,
-        description=f'Bagging classifier using {classifier} as base estimator with improved parameter ranges'
+        description=f'Bagging classifier using {classifier} as base estimator with memory-efficient parameter ranges'
     )

@@ -45,7 +45,6 @@ class DataPreprocessor:
             min_count=self.config.MIN_COUNT_FOR_CATEGORICAL,
             max_categories=self.config.MAX_CATEGORIES_PER_FEATURE
         )
-        ##ADD NULL INDICATOR COLUMN
 
         # Validate numeric columns
         self._validate_numeric_columns(X_cleaned)

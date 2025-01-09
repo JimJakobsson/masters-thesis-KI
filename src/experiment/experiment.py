@@ -17,8 +17,7 @@ from preprocessing import preprocessing_result
 from preprocessing.data_preprocessor import DataPreprocessor
 from preprocessing.preprocessing_result import PreprocessingResult
 from imblearn.over_sampling import SMOTE
-
-
+from visualisation.age_histogram_plotter import AgeHistogramPlotter
 class Experiment: 
     def __init__(self,
                  model: BaseEstimator,
@@ -38,6 +37,8 @@ class Experiment:
 
         self.preprocessor = DataPreprocessor()
         self.evaluator = ModelEvaluator(self.output_dir)
+
+        self.age_histogram_plotter = AgeHistogramPlotter(self.output_dir)
         
         # Store inputs
         self.model = model
@@ -146,6 +147,13 @@ class Experiment:
         
         raw_data = self.db_reader.read_ipt_data(self.config.data_table, use_cache = False, cache_path=cache_path)
         raw_data = self.data_handler.calculate_ages(raw_data)
+
+        # #Create bocxplot for age distribution
+        # self.age_boxploter.plot_age_distribution(raw_data)
+
+        #Create histogram for age distribution
+        # self.age_histogram_plotter.plot_age_distribution(raw_data)
+
         labeled_data = self.preprocessor.create_labels(
             data=raw_data, 
             base_year=self.config.base_year, 

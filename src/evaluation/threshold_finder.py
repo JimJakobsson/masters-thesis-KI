@@ -1,44 +1,15 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score
+from sklearn.metrics import roc_curve
 
 class ThresholdFinder:
     def __init__(self):
         pass
-
-    # def find_optimal_threshold(self, y_true: pd.Series, y_prob: np.ndarray) -> float:
-    #     """
-    #     Find the optimal classification threshold for binary classification
-    #     using F1 score as the metric to optimize.
-
-    #     Args:
-    #         y_true: True labels
-    #         y_prob: Predicted probabilities for class 1
-
-    #     Returns:
-    #         float: Optimal threshold value
-    #     """
-    #     thresholds = np.linspace(0.1, 0.9, 100)  # Test thresholds from 0.1 to 0.9
-    #     f1_scores = []
-
-    #     for threshold in thresholds:
-    #         y_pred = (y_prob > threshold).astype(int)
-    #         f1 = f1_score(y_true, y_pred)
-    #         f1_scores.append(f1)
-
-    #     optimal_idx = np.argmax(f1_scores)
-    #     optimal_threshold = thresholds[optimal_idx]
-
-    #     # Print results
-    #     print(f"\nOptimal threshold found: {optimal_threshold:.3f}")
-    #     print(f"Best F1 score: {f1_scores[optimal_idx]:.3f}")
-
-    #     return optimal_threshold
     
     def find_optimal_threshold(self, y_true: pd.Series, y_prob: np.ndarray) -> float:
         """
         Find the optimal classification threshold for binary classification
-        using accuracy as the metric to optimize.
+        using geometric mean of TPR and TNR (equivalent to geometric mean method in ROC plotter).
 
         Args:
             y_true: True labels
@@ -47,19 +18,23 @@ class ThresholdFinder:
         Returns:
             float: Optimal threshold value
         """
-        thresholds = np.linspace(0.1, 0.9, 1000)  # Test thresholds from 0.1 to 0.9
-        accuracies = []
-
-        for threshold in thresholds:
-            y_pred = (y_prob > threshold).astype(int)
-            accuracy = np.mean(y_pred == y_true)
-            accuracies.append(accuracy)
-
-        optimal_idx = np.argmax(accuracies)
+        # Calculate ROC curve points
+        fpr, tpr, thresholds = roc_curve(y_true, y_prob)
+        
+        # Calculate geometric mean (equivalent to sqrt(TPR * (1-FPR)))
+        geometric_mean = np.sqrt(tpr * (1-fpr))
+        
+        # Find optimal threshold
+        optimal_idx = np.argmax(geometric_mean)
         optimal_threshold = thresholds[optimal_idx]
 
+        # Calculate final scores at optimal threshold
+        y_pred = (y_prob > optimal_threshold).astype(int)
+        final_accuracy = np.mean(y_pred == y_true)
+        
         # Print results
         print(f"\nOptimal threshold found: {optimal_threshold:.3f}")
-        print(f"Best accuracy: {accuracies[optimal_idx]:.3f}")
+        print(f"Accuracy at optimal threshold: {final_accuracy:.3f}")
+        # print(f"Geometric mean at optimal threshold: {geometric_mean[optimal_idx]:.3f}")
 
         return optimal_threshold

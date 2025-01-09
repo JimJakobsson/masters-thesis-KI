@@ -27,7 +27,7 @@ class ExperimentConfig:
 
     cv_folds: int = 5 # Number of cross-validation folds
 
-    n_trials_optuna: int = 230 # Number of trials for Optuna
+    n_trials_optuna: int = 300 # Number of trials for Optuna
 
     evaluate_age_groups: bool = False # Whether to evaluate age groups
 

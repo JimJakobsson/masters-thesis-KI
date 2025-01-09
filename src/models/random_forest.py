@@ -3,17 +3,10 @@ from .model_config import ModelConfig
 
 def get_random_forest_config() -> ModelConfig:
     """Get the configuration for a random forest model"""
-    # Define class weight mappings
-    CLASS_WEIGHT_OPTIONS = {
-        'w1.25': {0: 1, 1: 1.25},
-        'w1.5': {0: 1, 1: 1.5},
-        'w2.0': {0: 1, 1: 2},
-        'balanced': 'balanced'
-    }
+   
     param_grid = {
         
         'bootstrap': [True],
-        # 'class_weight': list(CLASS_WEIGHT_OPTIONS.keys()),  # Use string keys instead of dicts
         'ccp_alpha': (0.001, 0.01),
         'criterion': ['entropy'],
         'max_depth': (20, 60),
@@ -30,13 +23,9 @@ def get_random_forest_config() -> ModelConfig:
     }
     
     def param_suggest(trial):
-        # # Get the suggested class weight option
-        # class_weight_key = trial.suggest_categorical('class_weight', param_grid['class_weight'])
-        # # Convert back to the actual class weight value
-        # class_weight_value = CLASS_WEIGHT_OPTIONS[class_weight_key]
+        
 
         base_params = {
-            # 'class_weight': class_weight_value,
 
             'bootstrap': trial.suggest_categorical('bootstrap', param_grid['bootstrap']),
             'ccp_alpha': trial.suggest_float('ccp_alpha', param_grid['ccp_alpha'][0], param_grid['ccp_alpha'][1]),
