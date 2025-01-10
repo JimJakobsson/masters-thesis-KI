@@ -326,7 +326,7 @@ class ModelEvaluator(BaseEvaluator):
                 # Use progressive sampling to find optimal sample size
                 from sklearn.model_selection import train_test_split
                 
-                max_kernel_samples = 5 # Adjust based on available memory and time
+                max_kernel_samples = 20 # Adjust based on available memory and time
                 if len(data) <= max_kernel_samples:
                     return data
                     

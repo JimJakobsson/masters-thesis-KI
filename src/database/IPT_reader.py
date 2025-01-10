@@ -11,7 +11,7 @@ class IPTReader(DatabaseReader):
     IPTs = {
         "IPT1": "archive.ipt1_20130909",
         "IPT2": "archive.ipt2_20130910",
-        # "IPT3": "archive.ipt3_20130909",
+        "IPT3": "archive.ipt3_20130909",
         # "IPT5": "archive.ipt4_20130909",
         # "IPT6": "archive.ipt6_20130909",
         # "IPT7": "archive.ipt7_20130909",
@@ -20,7 +20,7 @@ class IPTReader(DatabaseReader):
     }
 
     def read_ipt_data(self, 
-                       ipt_table: str = "IPT2", #Default as ipt1
+                       ipt_table: str, 
                         # ipt_table: str = "archive.ipt1_20130909", #Default as ipt1 
                         mortality_table: str = "archive.resp_0121_mortality2022",
                         use_cache: bool = False,

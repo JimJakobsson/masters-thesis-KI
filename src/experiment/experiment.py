@@ -47,12 +47,21 @@ class Experiment:
 
     def _save_classification_report(self, report: str, best_params: str, optimal_threshold) -> None:
         """Saves classification report to a file"""
-        with open(self.output_dir / 'classification_report.txt', 'w') as f:
+        with open(self.output_dir / 'results_metrics.txt', 'w') as f:
             f.write(report)
             f.write("\n\nBest parameters found during grid search:\n")
             f.write(str(best_params))
             f.write("\n\nOptimal threshold for classification:\n")
             f.write(str(optimal_threshold))
+            f.write("\n\nData table used:\n")
+            f.write(str(self.config.data_table))
+            f.write("\n\nBase year used:\n")
+            f.write(str(self.config.base_year))
+            f.write("\n\nDeath threshold used:\n")
+            f.write(str(self.config.death_threshold))
+            f.write("\n\nNumber of trials:\n")
+            f.write(str(self.config.n_trials_optuna))
+
         print("\nClassification report and best params saved to 'classification_report.txt'")
 
     def _evaluate_age_group(self,
