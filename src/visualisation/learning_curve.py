@@ -133,7 +133,7 @@ class LearningCurvePlotter(BasePlotter):
             model, X, y,
             train_sizes=train_sizes,
             cv=5,
-            n_jobs=-1,
+            n_jobs=1,
             scoring='accuracy',
             shuffle=True,
             random_state=42

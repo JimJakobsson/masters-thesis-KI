@@ -44,6 +44,7 @@ class ModelEvaluator(BaseEvaluator):
         """Evaluate model performance using classification metrics"""
         
         y_prob = grid_search.predict_proba(X_test)[:, 1]
+        print(f"Predicted probabilities: {y_prob}")
         
         # Find optimal threshold if none provided
         if threshold is None:
@@ -148,6 +149,13 @@ class ModelEvaluator(BaseEvaluator):
         
         # Get feature names after preprocessing
         preprocessed_feature_names = self.get_feature_names_after_preprocessing(best_model)
+
+        # Ensure feature names match the SHAP values shape
+        if len(preprocessed_feature_names) != self.shap_values.shape[1]:
+            print(f"Warning: Feature name count ({len(preprocessed_feature_names)}) doesn't match SHAP values shape ({self.shap_values.shape[1]})")
+            # Trim feature names to match SHAP values
+            preprocessed_feature_names = preprocessed_feature_names[:self.shap_values.shape[1]]
+
         print("SHAP values shape:", self.shap_values.shape)
         print("Feature names:", len(preprocessed_feature_names))
         # Extract numeric and categorical features from transformer configuration
@@ -203,7 +211,6 @@ class ModelEvaluator(BaseEvaluator):
         # Initialize dictionary for aggregated SHAP values
         aggregated_shap = {}
         processed_indices = set()
-
         current_idx = 0
         
         # Process each original feature
@@ -326,7 +333,7 @@ class ModelEvaluator(BaseEvaluator):
                 # Use progressive sampling to find optimal sample size
                 from sklearn.model_selection import train_test_split
                 
-                max_kernel_samples = 20 # Adjust based on available memory and time
+                max_kernel_samples = 200 # Adjust based on available memory and time
                 if len(data) <= max_kernel_samples:
                     return data
                     

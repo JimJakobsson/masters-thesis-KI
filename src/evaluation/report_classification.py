@@ -24,7 +24,7 @@ class ReportClassification:
         try:
             metrics = {
                 'accuracy': accuracy_score(y_true, y_pred),
-                'classification_report': classification_report(y_true, y_pred)
+                'classification_report': classification_report(y_true, y_pred, zero_division=1)
             }
             
             return metrics

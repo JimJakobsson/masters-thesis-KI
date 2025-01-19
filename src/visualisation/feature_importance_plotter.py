@@ -11,7 +11,7 @@ class FeatureImportancePlotter(BasePlotter):
     """Handles feature importance visualization"""
     
     def plot(self, feature_importance: pd.DataFrame, 
-             num_features: int = 20, 
+             num_features: int = 30, 
              output_suffix: str = '') -> None:
         """Plot feature importance"""
      
@@ -40,7 +40,7 @@ class FeatureImportancePlotter(BasePlotter):
                                            output_suffix)
 
     def plot_relative_feature_importance(self, feature_importance: pd.DataFrame, 
-                                           num_features: int = 20, 
+                                           num_features: int, 
                                            output_suffix: str = '') -> None:
         """Plot Min-max normalization to scale values between 0 and 1 """
         min_val = feature_importance['importance_abs_mean'].min()

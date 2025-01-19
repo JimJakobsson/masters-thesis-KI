@@ -162,7 +162,7 @@ class ModelTrainerOptuna:
                     X, y,
                     cv=self.config.cv_folds,
                     scoring='f1',
-                    n_jobs=2
+                    n_jobs=1
                 )
                 return scores.mean()
             
@@ -228,7 +228,7 @@ class ModelTrainerOptuna:
             # Get base configuration for voting classifier
             base_config = {
                 'estimators': pipeline.named_steps['classifier'].estimators,
-                'n_jobs': -1,
+                'n_jobs': 1,
                 'voting': 'soft'
             }
             

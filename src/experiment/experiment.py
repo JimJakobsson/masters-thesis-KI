@@ -103,7 +103,7 @@ class Experiment:
             
             # Evaluate the model with optimal threshold
             result = self.evaluator.evaluate_model(
-                age_grid_search, X_test, y_test, self.config.threshold
+                age_grid_search, X_test, y_test, self.config.death_threshold
             )
             
             # Save classification report with age group suffix
@@ -188,8 +188,8 @@ class Experiment:
 
         #Evaluate the model with optimal threshold
         result = self.evaluator.evaluate_model(
-            grid_search, X_test, y_test, self.config.threshold)
-        
+             grid_search, X_test, y_test)
+
         classification_report = result['classification_report']
         best_params = result['best_params']
         optimal_threshold = result['optimal_threshold']

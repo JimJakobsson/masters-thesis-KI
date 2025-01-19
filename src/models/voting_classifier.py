@@ -12,7 +12,7 @@ def get_voting_config() -> ModelConfig:
     base_model = VotingClassifier(
         estimators=base_estimators,
         voting='soft',
-        n_jobs=-1
+        n_jobs=1
     )
    
     param_grid = {
