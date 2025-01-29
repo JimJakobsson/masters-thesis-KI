@@ -1,0 +1,18 @@
+2025-01-17 16:20:20,550 - ERROR - Error in random_forest_classifier experiment: print_classification_report() got an unexpected keyword argument 'zero_division'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 190, in run
+    result = self.evaluator.evaluate_model(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 57, in evaluate_model
+    report = self.report.print_classification_report(y_test, y_pred, zero_division=1)
+TypeError: print_classification_report() got an unexpected keyword argument 'zero_division'
+2025-01-17 16:20:34,906 - ERROR - Error in hist_gradient_boosting_classifier experiment: print_classification_report() got an unexpected keyword argument 'zero_division'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 190, in run
+    result = self.evaluator.evaluate_model(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 57, in evaluate_model
+    report = self.report.print_classification_report(y_test, y_pred, zero_division=1)
+TypeError: print_classification_report() got an unexpected keyword argument 'zero_division'

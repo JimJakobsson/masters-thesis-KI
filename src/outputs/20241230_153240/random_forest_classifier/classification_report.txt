@@ -1,0 +1,12 @@
+              precision    recall  f1-score   support
+
+           0       0.87      0.44      0.59        45
+           1       0.68      0.95      0.79        56
+
+    accuracy                           0.72       101
+   macro avg       0.77      0.70      0.69       101
+weighted avg       0.76      0.72      0.70       101
+
+
+Best parameters found during grid search:
+{'ccp_alpha': 0.005707183724114233, 'max_depth': 23, 'max_leaf_nodes': 54, 'max_samples': 0.9124250025110634, 'min_impurity_decrease': 0.0011473326449963268, 'min_samples_leaf': 1, 'min_samples_split': 9, 'min_weight_fraction_leaf': 8.831868743818688e-06, 'n_estimators': 135, 'oob_score': True}

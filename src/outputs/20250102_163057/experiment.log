@@ -1,0 +1,9 @@
+2025-01-02 16:31:09,471 - ERROR - Error in random_forest_classifier experiment: create_pipeline() got an unexpected keyword argument 'verbose'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 143, in run
+    grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/model_trainer_optuna.py", line 222, in train_model
+    final_pipeline = self.create_pipeline(
+TypeError: create_pipeline() got an unexpected keyword argument 'verbose'

@@ -11,6 +11,7 @@ import shap
 import numpy as np
 import pandas as pd
 from .baseplotter import BasePlotter
+from experiment.experiment_config import ExperimentConfig
 
 class ShapPlotter(BasePlotter):
     """Handles SHAP-based visualizations"""
@@ -70,60 +71,66 @@ class ShapPlotter(BasePlotter):
         self.save_plot('shap_summary.pdf', output_suffix)
     
     def plot_waterfall(self, model, X_test: pd.DataFrame, 
-                      class_to_explain: int,
-                      explainer: Any,
-                      feature_importance_abs_mean: pd.DataFrame,
-                      aggregated_shap: dict,
-                      output_suffix: str = '') -> None:
-        plt.figure(figsize=self.config.FIGURE_SIZES['waterfall'])
-        
+                  class_to_explain: int,
+                  explainer: Any,
+                  feature_importance_abs_mean: pd.DataFrame,
+                  aggregated_shap: dict,
+                  output_suffix: str = '') -> None:
+    
         probas = model.predict_proba(X_test)
-
-
-
-        observation_idx = (np.argmax(probas[:, 1]) 
-                         if class_to_explain == 1 
-                         else np.argmax(probas[:, 0])) # Find the observation with the highest probability for the class to explain
         
-        probability = probas[observation_idx, class_to_explain]
-        print(f"Probability of class {class_to_explain}, in the waterfall plot: {probability:.4f}")
+        # Get indices of 5 random people ages 60-70 years old
+        
+        # Get indices of 5 random people ages 60-70 years old
+        age_filter = (1987 - X_test['birthdate1'].astype(str).str[:4].astype(int) >= 60) & (1987 - X_test['birthdate1'].astype(str).str[:4].astype(int) <= 70)
+        eligible_indices = np.where(age_filter)[0]
+        print(f"Found {len(eligible_indices)} samples in the specified age range.")
+        if len(eligible_indices) < 5:
+            raise ValueError("Not enough samples in the specified age range.")
+        people_indices = np.random.choice(eligible_indices, 5, replace=False)
         
         features = list(feature_importance_abs_mean['feature'])  # Use predefined order of features
-        values = np.array([aggregated_shap[feature][observation_idx] for feature in features])
         
-        # Handle null indicator features in data preparation
-        data = []
-        for feature in features:
-            if feature.endswith('_nan'):
-                # For null indicators, use the isna() status of the original feature
-                orig_feature = feature.replace('_nan', '')
-                value = float(np.isnan(X_test.iloc[observation_idx][orig_feature]))
+        for i, observation_idx in enumerate(people_indices):
+            plt.figure(figsize=self.config.FIGURE_SIZES['waterfall'])
+            
+            probability = probas[observation_idx, class_to_explain]
+            print(f"Sample {i+1} - Probability of class {class_to_explain}: {probability:.4f}")
+            
+            values = np.array([aggregated_shap[feature][observation_idx] for feature in features])
+            
+            # Handle null indicator features in data preparation
+            data = []
+            for feature in features:
+                if feature.endswith('_nan'):
+                    # For null indicators, use the isna() status of the original feature
+                    orig_feature = feature.replace('_nan', '')
+                    value = float(np.isnan(X_test.iloc[observation_idx][orig_feature]))
+                else:
+                    value = X_test.iloc[observation_idx][feature]
+                data.append(value)
+            data = np.array(data)
+            
+            # Check if expected_value is a list or a single value
+            if isinstance(explainer.expected_value, (list, np.ndarray)) and len(explainer.expected_value) > class_to_explain:
+                base_value = float(explainer.expected_value[class_to_explain])
             else:
-                value = X_test.iloc[observation_idx][feature]
-            data.append(value)
-        data = np.array(data)
-        
-        # Check if expected_value is a list or a single value
-        if isinstance(explainer.expected_value, (list, np.ndarray)) and len(explainer.expected_value) > class_to_explain:
-            base_value = float(explainer.expected_value[class_to_explain])
-        else:
-            base_value = float(explainer.expected_value)
+                base_value = float(explainer.expected_value)
 
-        #if 'birthdate1' in features, display only the first four digits of the birthdate
-        if 'birthdate1' in features:
-            idx = features.index('birthdate1')
-            data[idx] = str(data[idx])[:4]
+            # Handle birthdate1 if present
+            if 'birthdate1' in features:
+                idx = features.index('birthdate1')
+                data[idx] = str(data[idx])[:4]
 
-        explanation = shap.Explanation(
-            values=values,
-            base_values=base_value,
-            data=data,
-            feature_names=features
-        )
-        
-        shap.waterfall_plot(explanation, show=False)
-        plt.title(f'Feature Impacts for Person with {probability:.2f} Mortality Risk',
-                 fontsize=self.config.FONT_SIZES['title'],
-                 ha='center')
-        self.save_plot(f'waterfall_class_{class_to_explain}.pdf', output_suffix)
-
+            explanation = shap.Explanation(
+                values=values,
+                base_values=base_value,
+                data=data,
+                feature_names=features
+            )
+            
+            shap.waterfall_plot(explanation, show=False)
+            plt.title(f'Feature Impacts For a Random Person',
+                    fontsize=self.config.FONT_SIZES['title'],
+                    ha='center')
+            self.save_plot(f'waterfall_class_{class_to_explain}_sample_{i+1}.pdf', output_suffix)

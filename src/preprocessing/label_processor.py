@@ -12,10 +12,12 @@ class LabelProcessor:
         df = df.copy()
         # Remove rows with null death_yrmon.
         #inplace=True modifies the original DataFrame
-        df.dropna(subset=['death_yrmon'], inplace=True) 
+
+        # df.dropna(subset=['death_yrmon'], inplace=True) 
         
         # Standardize death_yrmon format
         df['death_yrmon'] = df['death_yrmon'].apply(
+
             lambda x: str(int(x)) if pd.notnull(x) else None
         )
 
@@ -24,19 +26,18 @@ class LabelProcessor:
             lambda x: self._create_label(x, threshold)
         )
         
-        # Clean up and validate
-        # Drop rows with null labels
-        df = df.dropna(subset=['labels'])
         df['labels'] = df['labels'].astype(int)
         
         self._print_label_distribution(df['labels'])
         return df
     
     @staticmethod
-    def _create_label(death_yrmon: str, threshold: int) -> Optional[int]:
+    def _create_label(death_yrmon: Optional[str], threshold: int) -> Optional[int]:
         """Create label based on year from 'death_yrmon'"""
         try:
-            if death_yrmon and len(death_yrmon) >= 4:
+            if death_yrmon is None: #if a a death year is not available, classify as 0.
+                return 0 
+            elif len(death_yrmon) >= 4:
                 year = int(death_yrmon[:4])
                 return 0 if year > threshold else 1
             return None

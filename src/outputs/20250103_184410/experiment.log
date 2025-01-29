@@ -1,0 +1,21 @@
+2025-01-03 18:44:11,038 - ERROR - Error in random_forest_classifier experiment: 'ModelTrainerOptuna' object has no attribute 'suggest_parameter'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 143, in run
+    grid_search = self.trainer.train_model(pipeline, self.param_grid, X_train, y_train)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/model_trainer_optuna.py", line 116, in train_model
+    study.optimize(
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/study.py", line 475, in optimize
+    _optimize(
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/_optimize.py", line 63, in _optimize
+    _optimize_sequential(
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/_optimize.py", line 160, in _optimize_sequential
+    frozen_trial = _run_trial(study, func, catch)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/_optimize.py", line 248, in _run_trial
+    raise func_err
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/optuna/study/_optimize.py", line 197, in _run_trial
+    value_or_values = func(trial)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/model_trainer_optuna.py", line 86, in objective
+    params[clean_name] = self.suggest_parameter(trial, clean_name, param_range)
+AttributeError: 'ModelTrainerOptuna' object has no attribute 'suggest_parameter'

@@ -1,0 +1,9 @@
+2025-01-03 18:42:51,638 - ERROR - Error in random_forest_classifier experiment: name 'y' is not defined
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 142, in run
+    pipeline = self.trainer.create_pipeline(preprocessor, self.model)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/model_trainer_optuna.py", line 25, in create_pipeline
+    k_neighbors=min(5, Counter(y)[min(Counter(y).keys())] - 1)  # Dynamic k_neighbors
+NameError: name 'y' is not defined

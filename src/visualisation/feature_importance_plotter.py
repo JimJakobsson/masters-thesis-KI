@@ -11,7 +11,7 @@ class FeatureImportancePlotter(BasePlotter):
     """Handles feature importance visualization"""
     
     def plot(self, feature_importance: pd.DataFrame, 
-             num_features: int = 30, 
+             num_features: int = 20, 
              output_suffix: str = '') -> None:
         """Plot feature importance"""
      

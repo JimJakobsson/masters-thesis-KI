@@ -1,0 +1,27 @@
+              precision    recall  f1-score   support
+
+           0       0.91      0.76      0.83       103
+           1       0.42      0.69      0.52        26
+
+    accuracy                           0.74       129
+   macro avg       0.66      0.72      0.67       129
+weighted avg       0.81      0.74      0.76       129
+
+
+Best parameters found during grid search:
+{'ccp_alpha': 0.001217128792421137, 'max_depth': 60, 'max_leaf_nodes': 21, 'max_samples': 0.8550066265780294, 'min_impurity_decrease': 0.008491814338293789, 'min_samples_leaf': 2, 'min_samples_split': 24, 'min_weight_fraction_leaf': 0.0016988363509582802, 'n_estimators': 110, 'class1_weight': 9.084185884351747}
+
+Optimal threshold for classification:
+0.6559421252278351
+
+Data table used:
+IPT1
+
+Base year used:
+1987
+
+Death threshold used:
+10
+
+Number of trials:
+400

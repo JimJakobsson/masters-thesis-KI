@@ -1,0 +1,22 @@
+2024-12-29 15:15:54,970 - ERROR - Error in bagging classifier using random forest experiment: Error creating SHAP explainer: Model type not yet supported by TreeExplainer: <class 'sklearn.ensemble._bagging.BaggingClassifier'>
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 341, in _create_explainer
+    return shap.TreeExplainer(classifier)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/shap/explainers/_tree.py", line 195, in __init__
+    self.model = TreeEnsemble(model, self.data, self.data_missing, model_output)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/shap/explainers/_tree.py", line 1217, in __init__
+    raise InvalidModelError("Model type not yet supported by TreeExplainer: " + str(type(model)))
+shap.utils._exceptions.InvalidModelError: Model type not yet supported by TreeExplainer: <class 'sklearn.ensemble._bagging.BaggingClassifier'>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 146, in run
+    aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self.evaluator.calculate_feature_importance(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 130, in calculate_feature_importance
+    self.explainer = self._create_explainer(best_model, X_test_transformed)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 366, in _create_explainer
+    raise Exception(f"Error creating SHAP explainer: {str(e)}")
+Exception: Error creating SHAP explainer: Model type not yet supported by TreeExplainer: <class 'sklearn.ensemble._bagging.BaggingClassifier'>

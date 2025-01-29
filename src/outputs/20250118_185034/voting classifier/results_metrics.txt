@@ -1,0 +1,27 @@
+              precision    recall  f1-score   support
+
+           0       0.94      0.60      0.73        85
+           1       0.46      0.91      0.61        32
+
+    accuracy                           0.68       117
+   macro avg       0.70      0.75      0.67       117
+weighted avg       0.81      0.68      0.70       117
+
+
+Best parameters found during grid search:
+{'weight_config': 'slight_more_rf'}
+
+Optimal threshold for classification:
+0.21801563394979792
+
+Data table used:
+IPT1
+
+Base year used:
+1987
+
+Death threshold used:
+10
+
+Number of trials:
+400

@@ -1,0 +1,23 @@
+2024-12-30 16:05:01,485 - ERROR - Error in random_forest_classifier experiment: could not convert string to float: 'datastar'
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 142, in run
+    X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/imblearn/base.py", line 208, in fit_resample
+    return super().fit_resample(X, y)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/imblearn/base.py", line 106, in fit_resample
+    X, y, binarize_y = self._check_X_y(X, y)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/imblearn/base.py", line 161, in _check_X_y
+    X, y = self._validate_data(X, y, reset=True, accept_sparse=accept_sparse)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/base.py", line 650, in _validate_data
+    X, y = check_X_y(X, y, **check_params)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/utils/validation.py", line 1301, in check_X_y
+    X = check_array(
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/utils/validation.py", line 1012, in check_array
+    array = _asarray_with_order(array, order=order, dtype=dtype, xp=xp)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/utils/_array_api.py", line 745, in _asarray_with_order
+    array = numpy.asarray(array, order=order, dtype=dtype)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/pandas/core/generic.py", line 2153, in __array__
+    arr = np.asarray(values, dtype=dtype)
+ValueError: could not convert string to float: 'datastar'

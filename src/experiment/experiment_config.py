@@ -25,7 +25,7 @@ class ExperimentConfig:
     # base_year: int = 2013 #IPT10
 
 
-    death_threshold: int = 20 # Threshold for death, in number of years after base year
+    death_threshold: int = 10 # Threshold for death, in number of years after base year
  
 
     data_table: str = "IPT1"
@@ -45,7 +45,7 @@ class ExperimentConfig:
 
     cv_folds: int = 5 # Number of cross-validation folds
 
-    n_trials_optuna: int = 400 # Number of trials for Optuna
+    n_trials_optuna: int = 40 # Number of trials for Optuna
 
     evaluate_age_groups: bool = False # Whether to evaluate age groups
 

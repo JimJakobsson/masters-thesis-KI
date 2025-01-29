@@ -1,0 +1,28 @@
+2024-12-29 16:26:29,179 - ERROR - Error in bagging classifier using random forest experiment: Error creating SHAP explainer: The train_size = 1 should be greater or equal to the number of classes = 2
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 354, in _create_explainer
+    background = prepare_background_data(data, 'kernel')
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 329, in prepare_background_data
+    background, _ = train_test_split(
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2806, in train_test_split
+    train, test = next(cv.split(X=arrays[0], y=stratify))
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 1843, in split
+    for train, test in self._iter_indices(X, y, groups):
+  File "/nfs/home/jimjak/.local/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2260, in _iter_indices
+    raise ValueError(
+ValueError: The train_size = 1 should be greater or equal to the number of classes = 2
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/nfs/home/jimjak/masters-thesis-KI/src/models/experiment_suite.py", line 52, in run_experiments
+    experiment.run()
+  File "/nfs/home/jimjak/masters-thesis-KI/src/experiment/experiment.py", line 146, in run
+    aggregated_shap, feature_importance_dataframe, feature_importance_abs_mean = self.evaluator.calculate_feature_importance(
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 130, in calculate_feature_importance
+    self.explainer = self._create_explainer(best_model, X_test_transformed)
+  File "/nfs/home/jimjak/masters-thesis-KI/src/evaluation/model_evaluator.py", line 366, in _create_explainer
+    raise Exception(f"Error creating SHAP explainer: {str(e)}")
+Exception: Error creating SHAP explainer: The train_size = 1 should be greater or equal to the number of classes = 2
