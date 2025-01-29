@@ -83,11 +83,18 @@ class ShapPlotter(BasePlotter):
         
         # Get indices of 5 random people ages 60-70 years old
         age_filter = (1987 - X_test['birthdate1'].astype(str).str[:4].astype(int) >= 60) & (1987 - X_test['birthdate1'].astype(str).str[:4].astype(int) <= 70)
+
         eligible_indices = np.where(age_filter)[0]
+
         print(f"Found {len(eligible_indices)} samples in the specified age range.")
         if len(eligible_indices) < 5:
             raise ValueError("Not enough samples in the specified age range.")
-        people_indices = np.random.choice(eligible_indices, 5, replace=False)
+        
+        # Get probabilities for eligible indices
+        eligible_probas = probas[eligible_indices, class_to_explain]
+        # Get indices of top 5 highest risk individuals
+        top_5_local_indices = np.argsort(eligible_probas)[-5:][::-1]  # Sort descending
+        people_indices = eligible_indices[top_5_local_indices]  # Convert to global indices
         
         features = list(feature_importance_abs_mean['feature'])  # Use predefined order of features
         
@@ -130,7 +137,7 @@ class ShapPlotter(BasePlotter):
             )
             
             shap.waterfall_plot(explanation, show=False)
-            plt.title(f'Feature Impacts For a Random Person',
+            plt.title(f'Feature Impacts For a Random Person Aged {1987 - int(data[features.index("birthdate1")]):.0f}',
                     fontsize=self.config.FONT_SIZES['title'],
                     ha='center')
             self.save_plot(f'waterfall_class_{class_to_explain}_sample_{i+1}.pdf', output_suffix)
